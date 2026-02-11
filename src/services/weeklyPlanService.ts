@@ -7,11 +7,12 @@ export interface WeeklyPlanData {
     groupName?: string;
     userId: string;
     userName: string;
+    role?: string; // Added role
     weekStartDate: string;
     weekEndDate?: string;
-    focus: string;
-    tasks: string[];
-    deliverables: string[];
+    weeklyFocus: string; // Renamed from focus
+    tasks: string[]; // Restored
+    expectedDeliverables: string[]; // Renamed from deliverables
     resources: string[];
     progress: 'not_started' | 'in_progress' | 'completed' | 'blocked';
     notes?: string;

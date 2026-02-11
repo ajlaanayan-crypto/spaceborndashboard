@@ -26,11 +26,14 @@ export default function WeeklyPlanModal({ isOpen, onClose, group, memberUser, in
     const [formData, setFormData] = useState<Omit<WeeklyPlanData, 'id' | 'createdAt' | 'updatedAt'>>({
         groupId: group.id!,
         userId: memberUser.uid!,
+        userName: memberUser.name, // Added
         weekStartDate: "",
         role: memberUser.role || "member",
         weeklyFocus: "",
+        tasks: [], // Added
         expectedDeliverables: [],
-        resources: []
+        resources: [],
+        progress: 'not_started', // Added
     });
 
     const [newDeliverable, setNewDeliverable] = useState("");
@@ -49,20 +52,26 @@ export default function WeeklyPlanModal({ isOpen, onClose, group, memberUser, in
                     groupId: initialPlan.groupId,
                     userId: initialPlan.userId,
                     weekStartDate: initialPlan.weekStartDate,
-                    role: initialPlan.role,
+                    role: initialPlan.role || "member", // key: role
                     weeklyFocus: initialPlan.weeklyFocus,
+                    tasks: initialPlan.tasks || [], // Added
                     expectedDeliverables: initialPlan.expectedDeliverables || [],
-                    resources: initialPlan.resources || []
+                    resources: initialPlan.resources || [],
+                    progress: initialPlan.progress || 'not_started', // Added
+                    userName: initialPlan.userName || memberUser.name, // Added
                 });
             } else {
                 setFormData({
                     groupId: group.id!,
                     userId: memberUser.uid!,
+                    userName: memberUser.name, // Added
                     weekStartDate: currentWeek,
                     role: memberUser.role || "member",
                     weeklyFocus: "",
+                    tasks: [], // Added
                     expectedDeliverables: [],
-                    resources: []
+                    resources: [],
+                    progress: 'not_started', // Added
                 });
             }
         }

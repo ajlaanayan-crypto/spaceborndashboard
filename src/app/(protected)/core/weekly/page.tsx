@@ -33,9 +33,9 @@ export default function CoreWeeklyPlanningPage() {
     const [formData, setFormData] = useState({
         userId: "",
         userName: "",
-        focus: "",
+        weeklyFocus: "",
         tasks: [""],
-        deliverables: [""],
+        expectedDeliverables: [""],
         resources: [""],
         progress: 'not_started' as WeeklyPlanData['progress'],
         notes: "",
@@ -88,9 +88,9 @@ export default function CoreWeeklyPlanningPage() {
             setFormData({
                 userId: plan.userId,
                 userName: plan.userName,
-                focus: plan.focus,
+                weeklyFocus: plan.weeklyFocus,
                 tasks: plan.tasks,
-                deliverables: plan.deliverables,
+                expectedDeliverables: plan.expectedDeliverables,
                 resources: plan.resources,
                 progress: plan.progress,
                 notes: plan.notes || "",
@@ -100,9 +100,9 @@ export default function CoreWeeklyPlanningPage() {
             setFormData({
                 userId: member.userId,
                 userName: member.userName,
-                focus: "",
+                weeklyFocus: "",
                 tasks: [""],
-                deliverables: [""],
+                expectedDeliverables: [""],
                 resources: [""],
                 progress: 'not_started',
                 notes: "",
@@ -124,9 +124,9 @@ export default function CoreWeeklyPlanningPage() {
                 userName: formData.userName,
                 weekStartDate: currentWeekStart,
                 weekEndDate: currentWeekEnd,
-                focus: formData.focus,
+                weeklyFocus: formData.weeklyFocus,
                 tasks: formData.tasks.filter(t => t.trim()),
-                deliverables: formData.deliverables.filter(d => d.trim()),
+                expectedDeliverables: formData.expectedDeliverables.filter(d => d.trim()),
                 resources: formData.resources.filter(r => r.trim()),
                 progress: formData.progress,
                 notes: formData.notes,
@@ -149,21 +149,21 @@ export default function CoreWeeklyPlanningPage() {
         }
     };
 
-    const addArrayField = (field: 'tasks' | 'deliverables' | 'resources') => {
+    const addArrayField = (field: 'tasks' | 'expectedDeliverables' | 'resources') => {
         setFormData(prev => ({
             ...prev,
             [field]: [...prev[field], ""]
         }));
     };
 
-    const updateArrayField = (field: 'tasks' | 'deliverables' | 'resources', index: number, value: string) => {
+    const updateArrayField = (field: 'tasks' | 'expectedDeliverables' | 'resources', index: number, value: string) => {
         setFormData(prev => ({
             ...prev,
             [field]: prev[field].map((item, i) => i === index ? value : item)
         }));
     };
 
-    const removeArrayField = (field: 'tasks' | 'deliverables' | 'resources', index: number) => {
+    const removeArrayField = (field: 'tasks' | 'expectedDeliverables' | 'resources', index: number) => {
         setFormData(prev => ({
             ...prev,
             [field]: prev[field].filter((_, i) => i !== index)
@@ -239,7 +239,7 @@ export default function CoreWeeklyPlanningPage() {
                                 <div className="space-y-2 text-sm">
                                     <div>
                                         <p className="text-gray-400 text-xs">Focus</p>
-                                        <p className="text-white">{plan.focus}</p>
+                                        <p className="text-white">{plan.weeklyFocus}</p>
                                     </div>
                                     <div>
                                         <p className="text-gray-400 text-xs">Tasks ({plan.tasks.length})</p>
@@ -251,9 +251,9 @@ export default function CoreWeeklyPlanningPage() {
                                     </div>
                                     <div>
                                         <span className={`px-2 py-1 rounded text-xs ${plan.progress === 'completed' ? 'bg-green-500/10 text-green-400' :
-                                                plan.progress === 'in_progress' ? 'bg-blue-500/10 text-blue-400' :
-                                                    plan.progress === 'blocked' ? 'bg-red-500/10 text-red-400' :
-                                                        'bg-gray-500/10 text-gray-400'
+                                            plan.progress === 'in_progress' ? 'bg-blue-500/10 text-blue-400' :
+                                                plan.progress === 'blocked' ? 'bg-red-500/10 text-red-400' :
+                                                    'bg-gray-500/10 text-gray-400'
                                             }`}>
                                             {plan.progress.replace('_', ' ')}
                                         </span>
@@ -287,8 +287,8 @@ export default function CoreWeeklyPlanningPage() {
                                     type="text"
                                     required
                                     className="w-full bg-black/40 border border-white/10 rounded p-2 text-white focus:outline-none focus:border-blue-500"
-                                    value={formData.focus}
-                                    onChange={(e) => setFormData({ ...formData, focus: e.target.value })}
+                                    value={formData.weeklyFocus}
+                                    onChange={(e) => setFormData({ ...formData, weeklyFocus: e.target.value })}
                                 />
                             </div>
 
@@ -323,19 +323,19 @@ export default function CoreWeeklyPlanningPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">Deliverables</label>
-                                {formData.deliverables.map((deliverable, index) => (
+                                <label className="block text-sm text-gray-400 mb-1">Expected Deliverables</label>
+                                {formData.expectedDeliverables.map((deliverable, index) => (
                                     <div key={index} className="flex gap-2 mb-2">
                                         <input
                                             type="text"
                                             className="flex-1 bg-black/40 border border-white/10 rounded p-2 text-white focus:outline-none focus:border-blue-500"
                                             value={deliverable}
-                                            onChange={(e) => updateArrayField('deliverables', index, e.target.value)}
+                                            onChange={(e) => updateArrayField('expectedDeliverables', index, e.target.value)}
                                         />
-                                        {formData.deliverables.length > 1 && (
+                                        {formData.expectedDeliverables.length > 1 && (
                                             <button
                                                 type="button"
-                                                onClick={() => removeArrayField('deliverables', index)}
+                                                onClick={() => removeArrayField('expectedDeliverables', index)}
                                                 className="px-2 text-red-400 hover:text-red-300"
                                             >
                                                 <X className="w-4 h-4" />
@@ -345,7 +345,7 @@ export default function CoreWeeklyPlanningPage() {
                                 ))}
                                 <button
                                     type="button"
-                                    onClick={() => addArrayField('deliverables')}
+                                    onClick={() => addArrayField('expectedDeliverables')}
                                     className="text-sm text-blue-400 hover:text-blue-300"
                                 >
                                     + Add Deliverable

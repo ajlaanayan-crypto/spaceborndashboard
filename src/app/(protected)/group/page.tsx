@@ -363,7 +363,7 @@ export default function GroupDashboardPage() {
                                                 {weeklyPlan ? (
                                                     <div className="text-right hidden sm:block">
                                                         <p className="text-xs text-gray-500">Weekly Focus</p>
-                                                        <p className="text-sm text-blue-300 truncate max-w-[200px]">{weeklyPlan.focus}</p>
+                                                        <p className="text-sm text-blue-300 truncate max-w-[200px]">{weeklyPlan.weeklyFocus}</p>
                                                     </div>
                                                 ) : (
                                                     <span className="text-xs text-gray-600 italic hidden sm:block">No plan set</span>
@@ -392,12 +392,12 @@ export default function GroupDashboardPage() {
                                                         <div className="space-y-2">
                                                             <div>
                                                                 <span className="text-xs text-gray-500">Focus:</span>
-                                                                <p className="text-sm text-white">{weeklyPlan.focus}</p>
+                                                                <p className="text-sm text-white">{weeklyPlan.weeklyFocus}</p>
                                                             </div>
                                                             <div>
                                                                 <span className="text-xs text-gray-500">Deliverables:</span>
                                                                 <ul className="list-disc list-inside text-xs text-gray-300 mt-1">
-                                                                    {weeklyPlan.deliverables.map((d: string, i: number) => <li key={i}>{d}</li>)}
+                                                                    {weeklyPlan.expectedDeliverables.map((d: string, i: number) => <li key={i}>{d}</li>)}
                                                                 </ul>
                                                             </div>
                                                         </div>
