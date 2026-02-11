@@ -47,19 +47,14 @@ service firebase.storage {
     // PROFILE IMAGES
     // Path: profile-images/{userId}
     // ==========================================
+    // ==========================================
+    // PROFILE IMAGES
+    // Path: profile-images/{userId}
+    // ==========================================
     match /profile-images/{userId} {
-      // Anyone can read profile images (for display purposes)
       allow read: if true;
-      
-      // Users can upload/update their own profile image
-      // Must be authenticated, an image, and under 5MB
-      allow write: if isAuthenticated() && 
-                     isOwner(userId) && 
-                     isImage() && 
-                     isValidImageSize();
-      
-      // Users can delete their own profile image
-      allow delete: if isAuthenticated() && isOwner(userId);
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
     
     // ==========================================

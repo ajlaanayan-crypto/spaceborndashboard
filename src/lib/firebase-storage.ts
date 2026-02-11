@@ -1,4 +1,4 @@
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { app } from "./firebase";
 
 // Initialize Firebase Storage
@@ -15,13 +15,32 @@ export const uploadProfileImage = async (userId: string, file: File): Promise<st
         // Create a reference to the file location
         const storageRef = ref(storage, `profile-images/${userId}`);
 
-        // Upload the file
-        const snapshot = await uploadBytes(storageRef, file);
+        // Upload the file with progress monitoring
+        // const snapshot = await uploadBytes(storageRef, file);
 
-        // Get the download URL
-        const downloadURL = await getDownloadURL(snapshot.ref);
+        // Use uploadBytesResumable for better reliability and debugging
+        return new Promise((resolve, reject) => {
+            const uploadTask = uploadBytesResumable(storageRef, file);
 
-        return downloadURL;
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    console.log('Upload is ' + progress + '% done');
+                },
+                (error) => {
+                    console.error("Upload failed:", error);
+                    reject(error);
+                },
+                async () => {
+                    try {
+                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                        resolve(downloadURL);
+                    } catch (err) {
+                        reject(err);
+                    }
+                }
+            );
+        });
     } catch (error) {
         console.error("Error uploading profile image:", error);
         throw error;
