@@ -1,7 +1,7 @@
 import { collection, getDocs, query, doc, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserRole } from "@/context/AuthContext";
-import { uploadProfileImage, deleteProfileImage } from "@/lib/firebase-storage";
+import { compressImage } from "@/lib/imageCompression";
 
 export interface UserData {
     uid: string;
@@ -34,16 +34,16 @@ export const getUsersByRole = async (role: UserRole) => {
 };
 
 /**
- * Upload and update user's profile image
+ * Upload and update user's profile image (Stored as Base64 in Firestore)
  * @param uid - User's UID
  * @param file - Image file to upload
  */
 export const updateUserProfileImage = async (uid: string, file: File): Promise<string> => {
     try {
-        // Upload image to Firebase Storage
-        const photoURL = await uploadProfileImage(uid, file);
+        // Compress image to Base64 (to fit in Firestore document limits)
+        const photoURL = await compressImage(file, 500, 0.7);
 
-        // Update user document with new photoURL
+        // Update user document with new photoURL (base64 string)
         await updateDoc(doc(db, "users", uid), { photoURL });
 
         return photoURL;
@@ -59,8 +59,8 @@ export const updateUserProfileImage = async (uid: string, file: File): Promise<s
  */
 export const removeUserProfileImage = async (uid: string): Promise<void> => {
     try {
-        // Delete image from Firebase Storage
-        await deleteProfileImage(uid);
+        // No need to delete from storage as it's just a field in Firestore now
+        // await deleteProfileImage(uid); 
 
         // Remove photoURL from user document
         await updateDoc(doc(db, "users", uid), { photoURL: null });
