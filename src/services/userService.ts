@@ -1,0 +1,72 @@
+import { collection, getDocs, query, doc, setDoc, updateDoc, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { UserRole } from "@/context/AuthContext";
+import { uploadProfileImage, deleteProfileImage } from "@/lib/firebase-storage";
+
+export interface UserData {
+    uid: string;
+    email: string;
+    role: UserRole;
+    name: string;
+    status: "active" | "inactive";
+    photoURL?: string;
+    createdAt: string;
+}
+
+export const getAllUsers = async () => {
+    const q = query(collection(db, "users"));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserData));
+};
+
+export const createUserInFirestore = async (uid: string, data: Omit<UserData, "uid">) => {
+    await setDoc(doc(db, "users", uid), data);
+};
+
+export const updateUserStatus = async (uid: string, status: "active" | "inactive") => {
+    await updateDoc(doc(db, "users", uid), { status });
+};
+
+export const getUsersByRole = async (role: UserRole) => {
+    const q = query(collection(db, "users"), where("role", "==", role));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserData));
+};
+
+/**
+ * Upload and update user's profile image
+ * @param uid - User's UID
+ * @param file - Image file to upload
+ */
+export const updateUserProfileImage = async (uid: string, file: File): Promise<string> => {
+    try {
+        // Upload image to Firebase Storage
+        const photoURL = await uploadProfileImage(uid, file);
+
+        // Update user document with new photoURL
+        await updateDoc(doc(db, "users", uid), { photoURL });
+
+        return photoURL;
+    } catch (error) {
+        console.error("Error updating user profile image:", error);
+        throw error;
+    }
+};
+
+/**
+ * Remove user's profile image
+ * @param uid - User's UID
+ */
+export const removeUserProfileImage = async (uid: string): Promise<void> => {
+    try {
+        // Delete image from Firebase Storage
+        await deleteProfileImage(uid);
+
+        // Remove photoURL from user document
+        await updateDoc(doc(db, "users", uid), { photoURL: null });
+    } catch (error) {
+        console.error("Error removing user profile image:", error);
+        throw error;
+    }
+};
+

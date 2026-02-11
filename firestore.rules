@@ -1,0 +1,269 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             userExists() &&
+             getUserData().role == 'admin';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function hasElevatedAccess() {
+      return isAuthenticated() && 
+             userExists() && 
+             (getUserData().role == 'admin' || getUserData().role == 'core_employee');
+    }
+    
+    // ==========================================
+    // USERS COLLECTION
+    // Users need to create their own doc on signup
+    // ==========================================
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow delete: if isAdmin();
+      
+      match /{document=**} {
+        allow read, write: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      }
+    }
+    
+    // ==========================================
+    // GROUPS 
+    // ==========================================
+    match /groups/{groupId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+      
+      match /{document=**} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+    
+    // ==========================================
+    // GROUP MEMBERS
+    // ==========================================
+    match /groupMembers/{memberId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==========================================
+    // TASKS
+    // ==========================================
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+      
+      match /{document=**} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+    
+    // ==========================================
+    // NOTIFICATIONS
+    // ==========================================
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // MESSAGES
+    // Non-admin users need read access for their messages
+    // ==========================================
+    match /messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // RESOURCES
+    // ==========================================
+    match /resources/{resourceId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // MEETINGS
+    // ==========================================
+    match /meetings/{meetingId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // MEETING PARTICIPANTS
+    // ==========================================
+    match /meetingParticipants/{participantId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // ANNOUNCEMENTS
+    // ==========================================
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // FEEDBACK
+    // ==========================================
+    match /feedback/{feedbackId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // PERFORMANCE SCORES
+    // ==========================================
+    match /performance_scores/{scoreId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // COMMENTS
+    // ==========================================
+    match /comments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+    
+    // ==========================================
+    // REPORTS
+    // ==========================================
+    match /reports/{reportId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // WEEKLY PLANS
+    // ==========================================
+    match /weeklyPlans/{planId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // SESSIONS
+    // All users need to create/update sessions on login
+    // ==========================================
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==========================================
+    // AUDIT LOGS
+    // ==========================================
+    match /auditLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // EXPENSES
+    // ==========================================
+    match /expenses/{expenseId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // FINANCE MODULE - TRANSACTIONS
+    // ==========================================
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // FINANCE MODULE - BUDGETS
+    // ==========================================
+    match /budgets/{budgetId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // FINANCE MODULE - INVESTORS
+    // ==========================================
+    match /investors/{investorId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // FINANCE MODULE - ASSETS
+    // ==========================================
+    match /assets/{assetId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
+    // DEFAULT DENY ALL OTHER COLLECTIONS
+    // ==========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

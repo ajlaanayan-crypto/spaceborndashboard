@@ -1,0 +1,220 @@
+rules_version = '2';
+
+// ==========================================
+// FIREBASE STORAGE SECURITY RULES
+// ==========================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user is accessing their own files
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Check file size (max 5MB for images, 10MB for documents)
+    function isValidImageSize() {
+      return request.resource.size <= 5 * 1024 * 1024; // 5MB
+    }
+    
+    function isValidDocumentSize() {
+      return request.resource.size <= 10 * 1024 * 1024; // 10MB
+    }
+    
+    // Check if file is an image
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Check if file is a document
+    function isDocument() {
+      return request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('application/msword') ||
+             request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.*') ||
+             request.resource.contentType.matches('text/.*');
+    }
+    
+    // ==========================================
+    // PROFILE IMAGES
+    // Path: profile-images/{userId}
+    // ==========================================
+    match /profile-images/{userId} {
+      // Anyone can read profile images (for display purposes)
+      allow read: if true;
+      
+      // Users can upload/update their own profile image
+      // Must be authenticated, an image, and under 5MB
+      allow write: if isAuthenticated() && 
+                     isOwner(userId) && 
+                     isImage() && 
+                     isValidImageSize();
+      
+      // Users can delete their own profile image
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // ==========================================
+    // TASK ATTACHMENTS
+    // Path: task-attachments/{taskId}/{fileName}
+    // ==========================================
+    match /task-attachments/{taskId}/{fileName} {
+      // Authenticated users can read task attachments
+      allow read: if isAuthenticated();
+      
+      // Authenticated users can upload task attachments
+      // Must be under 10MB
+      allow write: if isAuthenticated() && 
+                     (isImage() || isDocument()) &&
+                     (isImage() && isValidImageSize() || 
+                      isDocument() && isValidDocumentSize());
+      
+      // Only the uploader or admin can delete
+      // (For simplicity, allowing authenticated users to delete)
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==========================================
+    // RESOURCE FILES
+    // Path: resources/{resourceId}/{fileName}
+    // ==========================================
+    match /resources/{resourceId}/{fileName} {
+      // All authenticated users can read resources
+      allow read: if isAuthenticated();
+      
+      // Only authenticated users can upload resources
+      allow write: if isAuthenticated() && 
+                     (isImage() || isDocument()) &&
+                     (isImage() && isValidImageSize() || 
+                      isDocument() && isValidDocumentSize());
+      
+      // Authenticated users can delete resources
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==========================================
+    // MEETING ATTACHMENTS
+    // Path: meeting-attachments/{meetingId}/{fileName}
+    // ==========================================
+    match /meeting-attachments/{meetingId}/{fileName} {
+      // Authenticated users can read meeting files
+      allow read: if isAuthenticated();
+      
+      // Authenticated users can upload meeting files
+      allow write: if isAuthenticated() && 
+                     (isImage() || isDocument()) &&
+                     (isImage() && isValidImageSize() || 
+                      isDocument() && isValidDocumentSize());
+      
+      // Authenticated users can delete meeting files
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==========================================
+    // REPORT DOCUMENTS
+    // Path: reports/{userId}/{reportId}/{fileName}
+    // ==========================================
+    match /reports/{userId}/{reportId}/{fileName} {
+      // Users can read their own reports
+      // For simplicity, allowing all authenticated users
+      allow read: if isAuthenticated();
+      
+      // Users can upload their own report files
+      allow write: if isAuthenticated() && 
+                     isOwner(userId) && 
+                     (isImage() || isDocument()) &&
+                     (isImage() && isValidImageSize() || 
+                      isDocument() && isValidDocumentSize());
+      
+      // Users can delete their own report files
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // ==========================================
+    // EXPENSE RECEIPTS
+    // Path: expense-receipts/{userId}/{expenseId}/{fileName}
+    // ==========================================
+    match /expense-receipts/{userId}/{expenseId}/{fileName} {
+      // Users can read their own receipts
+      // Admins/managers can read all (handled in app logic)
+      allow read: if isAuthenticated();
+      
+      // Users can upload their own receipts
+      allow write: if isAuthenticated() && 
+                     isOwner(userId) && 
+                     (isImage() || isDocument()) &&
+                     isValidImageSize();
+      
+      // Users can delete their own receipts
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // ==========================================
+    // GROUP FILES
+    // Path: group-files/{groupId}/{fileName}
+    // ==========================================
+    match /group-files/{groupId}/{fileName} {
+      // All authenticated users can read group files
+      allow read: if isAuthenticated();
+      
+      // Authenticated users can upload group files
+      allow write: if isAuthenticated() && 
+                     (isImage() || isDocument()) &&
+                     (isImage() && isValidImageSize() || 
+                      isDocument() && isValidDocumentSize());
+      
+      // Authenticated users can delete group files
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==========================================
+    // ANNOUNCEMENT IMAGES
+    // Path: announcements/{announcementId}/{fileName}
+    // ==========================================
+    match /announcements/{announcementId}/{fileName} {
+      // All users can read announcements (even unauthenticated for public ones)
+      allow read: if true;
+      
+      // Only authenticated users can upload announcement images
+      allow write: if isAuthenticated() && 
+                     isImage() && 
+                     isValidImageSize();
+      
+      // Only authenticated users can delete
+      allow delete: if isAuthenticated();
+    }
+    
+    // ==========================================
+    // TEMP/UPLOADS FOLDER
+    // Path: temp/{userId}/{fileName}
+    // ==========================================
+    match /temp/{userId}/{fileName} {
+      // Users can read their own temp files
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Users can upload to their temp folder
+      allow write: if isAuthenticated() && 
+                     isOwner(userId) &&
+                     request.resource.size <= 20 * 1024 * 1024; // 20MB for temp
+      
+      // Users can delete their own temp files
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // ==========================================
+    // DEFAULT DENY ALL
+    // ==========================================
+    // Any path not explicitly defined above is denied
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
