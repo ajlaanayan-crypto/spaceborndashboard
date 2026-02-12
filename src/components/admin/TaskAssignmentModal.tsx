@@ -4,7 +4,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { createTask, TaskData } from "@/services/taskService";
 import { UserData } from "@/services/userService";
 import { GroupData } from "@/services/groupService";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Plus, Users, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -19,6 +19,13 @@ interface TaskAssignmentModalProps {
 
 export default function TaskAssignmentModal({ isOpen, onClose, group, members, onTaskCreated, preSelectedUserId }: TaskAssignmentModalProps) {
     const { user } = useAuth();
+
+    useEffect(() => {
+        if (isOpen) {
+            console.log("TaskAssignmentModal Opened:", { group, membersCount: members?.length, preSelectedUserId });
+        }
+    }, [isOpen, group, members, preSelectedUserId]);
+
     const [loading, setLoading] = useState(false);
 
     // Form State
@@ -34,28 +41,45 @@ export default function TaskAssignmentModal({ isOpen, onClose, group, members, o
         setLoading(true);
 
         try {
+            if (!group?.id) {
+                throw new Error("Group ID is missing");
+            }
+
+            // Safe user access
+            const currentUserId = user?.uid || "system";
+
+            // Safe assignment logic
+            let assignedToId = "";
+            let assignedToName = "";
+
+            if (assignmentType === 'individual') {
+                if (!assignedTo) throw new Error("Please select a member");
+                assignedToId = assignedTo;
+                const assignedMember = members.find(m => m.uid === assignedTo);
+                assignedToName = assignedMember?.name || "Unknown Member";
+            }
+
             const taskPayload: Omit<TaskData, 'id' | 'createdAt' | 'updatedAt'> = {
-                title,
-                description,
+                title: title.trim(),
+                description: description.trim(),
                 status: 'pending',
                 priority,
                 deadline,
-                assignedBy: user?.uid || "system",
-                type: assignmentType, // 'individual' or 'group'
-                groupId: group.id!,
-                groupName: group.name,
-                // Assignee Logic
-                assignedTo: assignmentType === 'individual' ? assignedTo : "",
-                assignedToName: assignmentType === 'individual' ? members.find(m => m.uid === assignedTo)?.name || "Unknown" : "",
+                assignedBy: currentUserId,
+                type: assignmentType,
+                groupId: group.id,
+                groupName: group.name || "Unknown Group",
+                assignedTo: assignedToId,
+                assignedToName,
                 assignedToGroup: assignmentType === 'group' ? group.id : undefined,
             };
 
             await createTask(taskPayload);
             onTaskCreated();
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to create task:", error);
-            alert("Failed to create task");
+            alert(error.message || "Failed to create task");
         } finally {
             setLoading(false);
         }
