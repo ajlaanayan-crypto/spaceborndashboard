@@ -91,7 +91,7 @@ export default function AdminTasksPage() {
 
                             <div className="flex gap-4 mt-3 pt-3 border-t border-white/5 text-sm text-gray-400 items-center justify-between">
                                 <div className="flex gap-4 items-center">
-                                    <span className="uppercase tracking-wider">Status: <span className="text-white">{task.status.replace("_", " ")}</span></span>
+                                    <span className="uppercase tracking-wider">Status: <span className="text-white">{(task.status || "pending").replace("_", " ")}</span></span>
                                     <span className="flex items-center gap-1"><User className="w-4 h-4" /> <span className="text-white font-mono">{task.assignedTo || "Unassigned"}</span></span>
                                     {task.subtasks && task.subtasks.length > 0 && (
                                         <span className="flex items-center gap-1">
