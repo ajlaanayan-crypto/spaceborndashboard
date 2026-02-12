@@ -1,9 +1,9 @@
 "use client";
 
 import { GlassCard } from "@/components/ui/GlassCard";
-import { CheckCircle, Clock, User, MessageSquare, Plus } from "lucide-react";
+import { CheckCircle, Clock, User, MessageSquare, Plus, Pencil, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getAllTasks, TaskData, createTask } from "@/services/taskService";
+import { getAllTasks, TaskData, createTask, deleteTask, updateTask } from "@/services/taskService";
 import { CommentSection } from "@/components/tasks/CommentSection";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { useAuth } from "@/context/AuthContext";
@@ -14,8 +14,10 @@ export default function AdminTasksPage() {
     const [loading, setLoading] = useState(true);
     const [selectedTaskForComments, setSelectedTaskForComments] = useState<TaskData | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [editingTask, setEditingTask] = useState<TaskData | null>(null);
 
     const fetchTasks = () => {
+        setLoading(true);
         getAllTasks()
             .then(setTasks)
             .finally(() => setLoading(false));
@@ -24,6 +26,40 @@ export default function AdminTasksPage() {
     useEffect(() => {
         fetchTasks();
     }, []);
+
+    const handleDelete = async (taskId: string) => {
+        if (!confirm("Are you sure you want to delete this mission? This action cannot be undone.")) return;
+        try {
+            await deleteTask(taskId);
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+        } catch (error) {
+            alert("Failed to delete task");
+        }
+    };
+
+    const handleUpdate = async (taskData: any) => {
+        if (!editingTask) return;
+        try {
+            await updateTask(editingTask.id!, taskData);
+            setEditingTask(null);
+            fetchTasks(); // Refresh to get latest data
+        } catch (error) {
+            alert("Failed to update task");
+        }
+    };
+
+    const handleCreate = async (taskData: any) => {
+        try {
+            await createTask({
+                ...taskData,
+                assignedBy: user?.uid || "system"
+            });
+            setShowCreateModal(false);
+            fetchTasks();
+        } catch (error) {
+            alert("Failed to create task");
+        }
+    };
 
     return (
         <div className="space-y-8">
@@ -46,8 +82,26 @@ export default function AdminTasksPage() {
                     {loading ? <p className="text-gray-500">Scanning tasks...</p> : tasks.length === 0 ? (
                         <p className="text-gray-500 italic">No tasks found in the system.</p>
                     ) : tasks.map(task => (
-                        <div key={task.id} className="p-4 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-                            <div className="flex justify-between items-start mb-2">
+                        <div key={task.id} className="p-4 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group relative">
+                            {/* Action Buttons */}
+                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={() => setEditingTask(task)}
+                                    className="p-1.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded"
+                                    title="Edit Mission"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(task.id!)}
+                                    className="p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded"
+                                    title="Delete Mission"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="flex justify-between items-start mb-2 pr-20"> {/* pr-20 for actions */}
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
                                         <h4 className="text-lg font-bold text-white flex items-center gap-2">
@@ -92,7 +146,11 @@ export default function AdminTasksPage() {
                             <div className="flex gap-4 mt-3 pt-3 border-t border-white/5 text-sm text-gray-400 items-center justify-between">
                                 <div className="flex gap-4 items-center">
                                     <span className="uppercase tracking-wider">Status: <span className="text-white">{(task.status || "pending").replace("_", " ")}</span></span>
-                                    <span className="flex items-center gap-1"><User className="w-4 h-4" /> <span className="text-white font-mono">{task.assignedTo || "Unassigned"}</span></span>
+                                    <span className="flex items-center gap-1"><User className="w-4 h-4" />
+                                        <span className="text-white font-mono">
+                                            {task.assignedToName || (task.type === 'group' ? task.groupName : task.assignedTo) || "Unassigned"}
+                                        </span>
+                                    </span>
                                     {task.subtasks && task.subtasks.length > 0 && (
                                         <span className="flex items-center gap-1">
                                             Subtasks:
@@ -104,16 +162,43 @@ export default function AdminTasksPage() {
                                 </div>
                                 <button
                                     onClick={() => setSelectedTaskForComments(task)}
-                                    className="flex items-center gap-2 text-blue-400 hover:text-white transition-colors"
+                                    className="flex items-center gap-1 hover:text-blue-400 transition-colors"
                                 >
                                     <MessageSquare className="w-4 h-4" />
-                                    <span>Comms</span>
+                                    Comments
                                 </button>
                             </div>
                         </div>
                     ))}
                 </div>
             </GlassCard>
+
+            {/* Create Modal */}
+            {showCreateModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+                    <div className="w-full max-w-3xl my-8">
+                        <TaskForm
+                            creatorId={user?.uid || ""}
+                            onSubmit={handleCreate}
+                            onCancel={() => setShowCreateModal(false)}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editingTask && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+                    <div className="w-full max-w-3xl my-8">
+                        <TaskForm
+                            creatorId={user?.uid || ""}
+                            onSubmit={handleUpdate}
+                            initialData={editingTask}
+                            onCancel={() => setEditingTask(null)}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Comments Modal */}
             {selectedTaskForComments && (

@@ -156,3 +156,16 @@ export const deleteTask = async (taskId: string) => {
         throw error;
     }
 };
+
+export const updateTask = async (taskId: string, updates: Partial<TaskData>) => {
+    try {
+        const taskRef = doc(db, "tasks", taskId);
+        await updateDoc(taskRef, {
+            ...updates,
+            updatedAt: serverTimestamp()
+        });
+    } catch (error) {
+        console.error("Error updating task:", error);
+        throw error;
+    }
+};
