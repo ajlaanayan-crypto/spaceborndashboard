@@ -9,6 +9,7 @@ import {
     Timestamp,
     updateDoc,
     doc,
+    deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -178,5 +179,17 @@ export const markMessageAsRead = async (
                 readBy: [...currentReadBy, userId],
             });
         }
+    }
+};
+
+/**
+ * Delete a message (Admin only)
+ */
+export const deleteMessage = async (messageId: string): Promise<void> => {
+    try {
+        await deleteDoc(doc(db, "messages", messageId));
+    } catch (error) {
+        console.error("Error deleting message:", error);
+        throw error;
     }
 };

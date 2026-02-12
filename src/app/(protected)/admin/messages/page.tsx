@@ -9,10 +9,11 @@ import {
     sendMessageToGroup,
     sendBroadcastMessage,
     getAllMessages,
+    deleteMessage,
     MessageData,
 } from "@/services/messageService";
 import { useState, useEffect } from "react";
-import { Send, Loader2, Users, User, Globe, Mail } from "lucide-react";
+import { Send, Loader2, Users, User, Globe, Mail, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 export default function AdminMessagesPage() {
@@ -164,8 +165,8 @@ export default function AdminMessagesPage() {
                                     type="button"
                                     onClick={() => setMessageType("broadcast")}
                                     className={`p-3 rounded-lg border transition-colors ${messageType === "broadcast"
-                                            ? "bg-blue-600 border-blue-500 text-white"
-                                            : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+                                        ? "bg-blue-600 border-blue-500 text-white"
+                                        : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
                                         }`}
                                 >
                                     <Globe className="w-5 h-5 mx-auto mb-1" />
@@ -175,8 +176,8 @@ export default function AdminMessagesPage() {
                                     type="button"
                                     onClick={() => setMessageType("group")}
                                     className={`p-3 rounded-lg border transition-colors ${messageType === "group"
-                                            ? "bg-blue-600 border-blue-500 text-white"
-                                            : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+                                        ? "bg-blue-600 border-blue-500 text-white"
+                                        : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
                                         }`}
                                 >
                                     <Users className="w-5 h-5 mx-auto mb-1" />
@@ -186,8 +187,8 @@ export default function AdminMessagesPage() {
                                     type="button"
                                     onClick={() => setMessageType("individual")}
                                     className={`p-3 rounded-lg border transition-colors ${messageType === "individual"
-                                            ? "bg-blue-600 border-blue-500 text-white"
-                                            : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+                                        ? "bg-blue-600 border-blue-500 text-white"
+                                        : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
                                         }`}
                                 >
                                     <User className="w-5 h-5 mx-auto mb-1" />
@@ -318,7 +319,7 @@ export default function AdminMessagesPage() {
                             messages.map((msg) => (
                                 <div
                                     key={msg.id}
-                                    className="p-4 bg-white/5 border border-white/5 rounded-lg"
+                                    className="p-4 bg-white/5 border border-white/5 rounded-lg group"
                                 >
                                     <div className="flex items-start justify-between mb-2">
                                         <div>
@@ -327,16 +328,35 @@ export default function AdminMessagesPage() {
                                                 From: {msg.fromName}
                                             </p>
                                         </div>
-                                        <span
-                                            className={`text-xs px-2 py-1 rounded ${msg.type === "broadcast"
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                className={`text-xs px-2 py-1 rounded ${msg.type === "broadcast"
                                                     ? "bg-purple-500/10 text-purple-400"
                                                     : msg.type === "group"
                                                         ? "bg-blue-500/10 text-blue-400"
                                                         : "bg-green-500/10 text-green-400"
-                                                }`}
-                                        >
-                                            {msg.type}
-                                        </span>
+                                                    }`}
+                                            >
+                                                {msg.type}
+                                            </span>
+                                            <button
+                                                onClick={async () => {
+                                                    if (confirm("Are you sure you want to delete this message?")) {
+                                                        try {
+                                                            await deleteMessage(msg.id!);
+                                                            setMessages(prev => prev.filter(m => m.id !== msg.id));
+                                                            setSuccess("Message deleted successfully");
+                                                        } catch (err) {
+                                                            setError("Failed to delete message");
+                                                        }
+                                                    }
+                                                }}
+                                                className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-red-400 transition-colors"
+                                                title="Delete message"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                     <p className="text-sm text-gray-300 mb-2 line-clamp-2">
                                         {msg.message}
