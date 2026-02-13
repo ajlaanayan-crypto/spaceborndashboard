@@ -87,53 +87,55 @@ export function UserActivityWidget() {
 
     return (
         <>
-            <GlassCard
-                className="cursor-pointer hover:border-blue-500/30 transition-all"
+            <div
+                className="cursor-pointer hover:scale-[1.02] transition-all"
                 onClick={() => setShowModal(true)}
             >
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-lg bg-green-500/10">
-                            <Activity className="w-6 h-6 text-green-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-white">User Activity</h3>
-                            <p className="text-sm text-gray-400">Live Sessions & History</p>
+                <GlassCard>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-lg bg-green-500/10">
+                                <Activity className="w-6 h-6 text-green-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">User Activity</h3>
+                                <p className="text-sm text-gray-400">Live Sessions & History</p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <span className="text-gray-400 text-sm">🟢 Live Users</span>
-                        <span className="text-2xl font-bold text-green-400">{totalActiveUsers}</span>
-                    </div>
-
-                    {activeSessions.length > 0 && (
-                        <div className="flex -space-x-2 overflow-hidden">
-                            {activeSessions.slice(0, 6).map((session, idx) => (
-                                <div key={idx} className="relative group">
-                                    <UserAvatar
-                                        name={session.userName || "User"}
-                                        photoURL={session.userPhotoURL}
-                                        size="medium"
-                                    />
-                                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-black"></div>
-                                </div>
-                            ))}
-                            {activeSessions.length > 6 && (
-                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-xs text-gray-400 border-2 border-black">
-                                    +{activeSessions.length - 6}
-                                </div>
-                            )}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-400 text-sm">🟢 Live Users</span>
+                            <span className="text-2xl font-bold text-green-400">{totalActiveUsers}</span>
                         </div>
-                    )}
 
-                    <div className="text-center pt-2 border-t border-white/10">
-                        <p className="text-xs text-blue-400">📊 Click to view detailed activity</p>
+                        {activeSessions.length > 0 && (
+                            <div className="flex -space-x-2 overflow-hidden">
+                                {activeSessions.slice(0, 6).map((session, idx) => (
+                                    <div key={idx} className="relative group">
+                                        <UserAvatar
+                                            name={session.userName || "User"}
+                                            photoURL={session.userPhotoURL}
+                                            size="medium"
+                                        />
+                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-black"></div>
+                                    </div>
+                                ))}
+                                {activeSessions.length > 6 && (
+                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-xs text-gray-400 border-2 border-black">
+                                        +{activeSessions.length - 6}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="text-center pt-2 border-t border-white/10">
+                            <p className="text-xs text-blue-400">📊 Click to view detailed activity</p>
+                        </div>
                     </div>
-                </div>
-            </GlassCard>
+                </GlassCard>
+            </div>
 
             {/* Modal */}
             {showModal && (
@@ -161,8 +163,8 @@ export function UserActivityWidget() {
                                         key={f}
                                         onClick={() => setFilter(f)}
                                         className={`px-4 py-2 rounded-lg font-medium transition-all ${filter === f
-                                                ? 'bg-blue-500 text-white'
-                                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                             }`}
                                     >
                                         {f.charAt(0).toUpperCase() + f.slice(1)}
