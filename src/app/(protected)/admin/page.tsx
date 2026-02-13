@@ -3,7 +3,6 @@
 import { GlassCard } from "@/components/ui/GlassCard";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { MessagesWidget } from "@/components/dashboard/MessagesWidget";
-import { UserActivityWidget } from "@/components/admin/UserActivityWidget";
 import { Users, Briefcase, AlertCircle, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getAllUsers, UserData } from "@/services/userService";
@@ -92,9 +91,6 @@ export default function AdminDashboard() {
             </GlassCard>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* User Activity Widget */}
-                <UserActivityWidget />
-
                 <GlassCard>
                     <h3 className="text-xl font-bold text-white mb-4">Team Members</h3>
                     {loading ? (
