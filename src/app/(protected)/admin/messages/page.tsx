@@ -160,7 +160,7 @@ export default function AdminMessagesPage() {
                         {/* Message Type */}
                         <div>
                             <label className="block text-sm text-gray-400 mb-2">Message Type</label>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setMessageType("broadcast")}

@@ -162,8 +162,8 @@ export function TaskForm({ onSubmit, initialData, creatorId, onCancel }: TaskFor
                             <label className="block text-sm text-gray-400 mb-2">Assignment Type</label>
                             <div className="flex gap-4">
                                 <label className={`flex items-center gap-2 cursor-pointer p-3 rounded-lg border flex-1 transition-colors ${formData.type === 'individual'
-                                        ? 'bg-blue-500/20 border-blue-500 text-blue-400'
-                                        : 'bg-black/40 border-white/10 text-gray-400 hover:bg-white/5'
+                                    ? 'bg-blue-500/20 border-blue-500 text-blue-400'
+                                    : 'bg-black/40 border-white/10 text-gray-400 hover:bg-white/5'
                                     }`}>
                                     <input
                                         type="radio"
@@ -177,8 +177,8 @@ export function TaskForm({ onSubmit, initialData, creatorId, onCancel }: TaskFor
                                     Individual
                                 </label>
                                 <label className={`flex items-center gap-2 cursor-pointer p-3 rounded-lg border flex-1 transition-colors ${formData.type === 'group'
-                                        ? 'bg-purple-500/20 border-purple-500 text-purple-400'
-                                        : 'bg-black/40 border-white/10 text-gray-400 hover:bg-white/5'
+                                    ? 'bg-purple-500/20 border-purple-500 text-purple-400'
+                                    : 'bg-black/40 border-white/10 text-gray-400 hover:bg-white/5'
                                     }`}>
                                     <input
                                         type="radio"
@@ -194,7 +194,7 @@ export function TaskForm({ onSubmit, initialData, creatorId, onCancel }: TaskFor
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {formData.type === 'individual' ? (
                                 <>
                                     <div>
@@ -244,7 +244,7 @@ export function TaskForm({ onSubmit, initialData, creatorId, onCancel }: TaskFor
                         </div>
 
                         {/* Deadlines etc */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm text-gray-400 mb-1">Deadline</label>
                                 <input
@@ -268,7 +268,7 @@ export function TaskForm({ onSubmit, initialData, creatorId, onCancel }: TaskFor
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm text-gray-400 mb-1">Difficulty</label>
                                 <select
