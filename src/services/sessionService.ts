@@ -120,19 +120,25 @@ export const getUserSessionHistory = async (userId: string) => {
 
 // Calculate session duration in minutes
 export const calculateSessionDuration = (session: SessionData): number => {
-    if (!session.loginTime || !session.lastActive) return 0;
+    if (!session.loginTime) return 0;
 
     const loginTime = session.loginTime.toDate ? session.loginTime.toDate() : new Date(session.loginTime);
-    const lastActive = session.lastActive.toDate ? session.lastActive.toDate() : new Date(session.lastActive);
 
-    const durationMs = lastActive.getTime() - loginTime.getTime();
+    // For active sessions, use current time; for inactive, use last active time
+    const endTime = session.isActive
+        ? new Date()
+        : (session.lastActive?.toDate ? session.lastActive.toDate() : new Date(session.lastActive));
+
+    const durationMs = endTime.getTime() - loginTime.getTime();
     return Math.floor(durationMs / 60000); // Convert to minutes
 };
 
 // Format duration to human-readable string
 export const formatDuration = (minutes: number): string => {
+    if (minutes < 1) return '< 1m';
     if (minutes < 60) return `${minutes}m`;
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
+    if (mins === 0) return `${hours}h`;
     return `${hours}h ${mins}m`;
 };

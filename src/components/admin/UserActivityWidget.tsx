@@ -24,7 +24,7 @@ export function UserActivityWidget() {
         // Refresh every 30 seconds
         const interval = setInterval(loadData, 30000);
         return () => clearInterval(interval);
-    }, [filter]);
+    }, [filter, showModal]); // Add showModal to dependencies
 
     const loadData = async () => {
         try {
@@ -48,25 +48,23 @@ export function UserActivityWidget() {
 
             setActiveSessions(enrichedActiveSessions);
 
-            // Load filtered sessions if modal is open
-            if (showModal) {
-                const filterValue = filter === 'all' ? undefined : filter;
-                const sessionsData = await getAllSessionsWithFilter(filterValue);
-                const enrichedSessions = sessionsData.map(session => {
-                    const user = usersData.find(u => u.uid === session.userId);
-                    return {
-                        ...session,
-                        userName: user?.name || user?.email || "Unknown",
-                        userEmail: user?.email,
-                        userPhotoURL: user?.photoURL
-                    };
-                });
-                setAllSessions(enrichedSessions.sort((a, b) => {
-                    const aTime = a.loginTime?.toDate?.() || new Date(a.loginTime);
-                    const bTime = b.loginTime?.toDate?.() || new Date(b.loginTime);
-                    return bTime.getTime() - aTime.getTime();
-                }));
-            }
+            // Always load all sessions data for modal
+            const filterValue = filter === 'all' ? undefined : filter;
+            const sessionsData = await getAllSessionsWithFilter(filterValue);
+            const enrichedSessions = sessionsData.map(session => {
+                const user = usersData.find(u => u.uid === session.userId);
+                return {
+                    ...session,
+                    userName: user?.name || user?.email || "Unknown",
+                    userEmail: user?.email,
+                    userPhotoURL: user?.photoURL
+                };
+            });
+            setAllSessions(enrichedSessions.sort((a, b) => {
+                const aTime = a.loginTime?.toDate?.() || new Date(a.loginTime);
+                const bTime = b.loginTime?.toDate?.() || new Date(b.loginTime);
+                return bTime.getTime() - aTime.getTime();
+            }));
         } catch (error) {
             console.error("Error loading activity data:", error);
         }
