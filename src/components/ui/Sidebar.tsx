@@ -13,6 +13,7 @@ import {
     UserPlus,
     DollarSign,
     Mail,
+    Calendar,
 } from "lucide-react";
 import Image from "next/image";
 import { auth } from "@/lib/firebase";
