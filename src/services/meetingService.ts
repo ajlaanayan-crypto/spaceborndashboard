@@ -129,3 +129,45 @@ export const generateMeetLink = (): string => {
     const randomId = Math.random().toString(36).substring(2, 12);
     return `https://meet.google.com/${randomId}`;
 };
+
+export const deleteMeetingParticipant = async (participantId: string): Promise<void> => {
+    await deleteDoc(doc(db, "meetingParticipants", participantId));
+};
+
+// Get all meetings for a specific user (based on their participant records)
+export const getUserMeetings = async (userId: string): Promise<MeetingData[]> => {
+    try {
+        // First, get all participant records for this user
+        const participantsQuery = query(
+            collection(db, "meetingParticipants"),
+            where("userId", "==", userId)
+        );
+        const participantsSnapshot = await getDocs(participantsQuery);
+
+        if (participantsSnapshot.empty) {
+            return [];
+        }
+
+        // Extract meeting IDs
+        const meetingIds = participantsSnapshot.docs.map(doc => doc.data().meetingId);
+
+        // Fetch all meetings
+        const meetingsQuery = query(collection(db, "meetings"));
+        const meetingsSnapshot = await getDocs(meetingsQuery);
+
+        // Filter meetings that match the user's participant records
+        const userMeetings = meetingsSnapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }) as MeetingData)
+            .filter(meeting => meetingIds.includes(meeting.id!))
+            .sort((a, b) => {
+                const aTime = a.scheduledAt?.toDate?.() || new Date(a.scheduledAt);
+                const bTime = b.scheduledAt?.toDate?.() || new Date(b.scheduledAt);
+                return bTime.getTime() - aTime.getTime();
+            });
+
+        return userMeetings;
+    } catch (error) {
+        console.error("Error fetching user meetings:", error);
+        return [];
+    }
+};

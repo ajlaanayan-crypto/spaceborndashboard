@@ -62,6 +62,7 @@ export function Sidebar() {
                 { href: "/core", label: "Dashboard", icon: LayoutDashboard },
                 { href: "/core/tasks", label: "Task Management", icon: Briefcase },
                 { href: "/core/weekly", label: "Weekly Planning", icon: ClipboardList },
+                { href: "/core/meetings", label: "Meetings", icon: Calendar },
                 { href: "/group", label: "My Group", icon: Users },
                 { href: "/core/team", label: "Team", icon: Users },
                 { href: "/core/resources", label: "Manage Resources", icon: UserPlus },
@@ -74,6 +75,7 @@ export function Sidebar() {
             return [
                 { href: "/employee", label: "My Workspace", icon: LayoutDashboard },
                 { href: "/employee/tasks", label: "My Tasks", icon: ClipboardList },
+                { href: "/employee/meetings", label: "Meetings", icon: Calendar },
                 { href: "/group", label: "My Group", icon: Users },
                 { href: "/intern/resources", label: "Resources", icon: UserPlus },
             ];
@@ -85,6 +87,7 @@ export function Sidebar() {
                 { href: "/intern", label: "Dashboard", icon: LayoutDashboard },
                 { href: "/group", label: "My Group", icon: Users },
                 { href: "/intern/tasks", label: "My Tasks", icon: ClipboardList },
+                { href: "/intern/meetings", label: "Meetings", icon: Calendar },
                 { href: "/intern/performance", label: "Performance", icon: Shield },
                 { href: "/intern/resources", label: "Resources", icon: UserPlus },
             ];
