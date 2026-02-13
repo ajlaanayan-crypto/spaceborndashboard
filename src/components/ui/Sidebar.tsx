@@ -179,60 +179,38 @@ export function Sidebar() {
                 </div>
             </div>
 
-            {/* Mobile Bottom Navigation - Modern Floating Design */}
-            <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
-                <nav className="bg-gradient-to-r from-black/95 to-gray-900/95 backdrop-blur-2xl rounded-[32px] border border-white/10 shadow-2xl px-4 py-3">
-                    <div className="flex items-center justify-around gap-2">
-                        {links.slice(0, 4).map((link) => {
-                            const Icon = link.icon;
-                            const isActive = pathname === link.href;
-                            return (
-                                <Link
-                                    key={link.href}
-                                    href={link.href}
-                                    className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl transition-all duration-300 min-w-[70px] relative ${isActive
-                                            ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20 shadow-lg shadow-blue-500/20"
-                                            : "hover:bg-white/5"
-                                        }`}
-                                >
-                                    {isActive && (
-                                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" />
-                                    )}
-                                    <div className={`p-2 rounded-xl transition-all ${isActive
-                                            ? "bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg"
-                                            : "bg-white/5"
-                                        }`}>
-                                        <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-white' : 'text-gray-400'}`} />
-                                    </div>
-                                    <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-white' : 'text-gray-400'
-                                        }`}>
-                                        {link.label.split(' ')[0]}
-                                    </span>
-                                </Link>
-                            );
-                        })}
-                        <Link
-                            href="/profile"
-                            className={`flex flex-col items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl transition-all duration-300 min-w-[70px] relative ${pathname === "/profile"
-                                    ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20 shadow-lg shadow-blue-500/20"
-                                    : "hover:bg-white/5"
-                                }`}
-                        >
-                            {pathname === "/profile" && (
-                                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" />
-                            )}
-                            <div className={`p-2 rounded-xl transition-all ${pathname === "/profile"
-                                    ? "bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg"
-                                    : "bg-white/5"
-                                }`}>
-                                <User className={`w-5 h-5 transition-colors ${pathname === "/profile" ? 'text-white' : 'text-gray-400'}`} />
-                            </div>
-                            <span className={`text-[10px] font-semibold transition-colors ${pathname === "/profile" ? 'text-white' : 'text-gray-400'
-                                }`}>
-                                Profile
-                            </span>
-                        </Link>
-                    </div>
+            {/* Mobile Bottom Navigation - Visible only on mobile */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/90 border-t border-white/10 backdrop-blur-xl z-50 pb-safe">
+                <nav className="flex items-center justify-around px-2 py-2">
+                    {links.slice(0, 4).map((link) => {
+                        const Icon = link.icon;
+                        const isActive = pathname === link.href;
+                        return (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[60px] ${isActive
+                                    ? "bg-white/10 text-white"
+                                    : "text-gray-400"
+                                    }`}
+                            >
+                                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : ''}`} />
+                                <span className="text-[10px] font-medium truncate max-w-[60px]">
+                                    {link.label.split(' ')[0]}
+                                </span>
+                            </Link>
+                        );
+                    })}
+                    <Link
+                        href="/profile"
+                        className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[60px] ${pathname === "/profile"
+                            ? "bg-white/10 text-white"
+                            : "text-gray-400"
+                            }`}
+                    >
+                        <User className="w-5 h-5" />
+                        <span className="text-[10px] font-medium">Profile</span>
+                    </Link>
                 </nav>
             </div>
         </>
