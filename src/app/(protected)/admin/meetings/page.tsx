@@ -105,19 +105,26 @@ export default function AdminMeetingsPage() {
 
             const currentUser = allUsers.find(u => u.uid === user?.uid);
 
-            const meetingId = await createMeeting({
+            // Construct payload dynamically to avoid undefined values
+            const meetingPayload: any = {
                 title: formData.title,
                 description: formData.description,
                 type: formData.type,
-                targetGroupId: formData.type === 'group' ? formData.targetGroupId : undefined,
-                targetUserIds: formData.type === 'individual' ? formData.targetUserIds : undefined,
                 scheduledAt,
                 duration: formData.duration,
                 meetingLink: meetLink,
                 createdBy: user?.uid || "system",
                 createdByName: currentUser?.name || "Admin",
                 status: 'scheduled',
-            });
+            };
+
+            if (formData.type === 'group') {
+                meetingPayload.targetGroupId = formData.targetGroupId;
+            } else if (formData.type === 'individual') {
+                meetingPayload.targetUserIds = formData.targetUserIds;
+            }
+
+            const meetingId = await createMeeting(meetingPayload);
 
             // Add participants
             if (formData.type === 'organization') {
@@ -256,8 +263,8 @@ export default function AdminMeetingsPage() {
                                     </div>
                                     <div className="flex gap-2">
                                         <span className={`px-2 py-1 rounded text-xs ${meeting.type === 'organization' ? 'bg-purple-500/10 text-purple-400' :
-                                                meeting.type === 'group' ? 'bg-blue-500/10 text-blue-400' :
-                                                    'bg-green-500/10 text-green-400'
+                                            meeting.type === 'group' ? 'bg-blue-500/10 text-blue-400' :
+                                                'bg-green-500/10 text-green-400'
                                             }`}>
                                             {meeting.type}
                                         </span>
