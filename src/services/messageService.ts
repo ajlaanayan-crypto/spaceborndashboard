@@ -10,6 +10,8 @@ import {
     updateDoc,
     doc,
     deleteDoc,
+    onSnapshot,
+    limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -190,6 +192,68 @@ export const deleteMessage = async (messageId: string): Promise<void> => {
         await deleteDoc(doc(db, "messages", messageId));
     } catch (error) {
         console.error("Error deleting message:", error);
+        throw error;
+    }
+};
+
+// ==========================================
+// REAL-TIME GROUP CHAT (Chat Room Style)
+// ==========================================
+
+export interface ChatMessageData {
+    id?: string;
+    groupId: string;
+    senderId: string;
+    senderName: string;
+    senderRole?: string;
+    content: string;
+    createdAt: any;
+}
+
+export const sendGroupChatMessage = async (
+    groupId: string,
+    content: string,
+    sender: { uid: string, name: string, role?: string }
+) => {
+    if (!content.trim()) return;
+
+    await addDoc(collection(db, "groups", groupId, "messages"), {
+        groupId,
+        senderId: sender.uid,
+        senderName: sender.name,
+        senderRole: sender.role || 'member',
+        content: content.trim(),
+        createdAt: serverTimestamp(),
+    });
+
+    // Update group's last message timestamp
+    await updateDoc(doc(db, "groups", groupId), {
+        lastMessageAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    });
+};
+
+export const subscribeToGroupMessages = (groupId: string, callback: (messages: ChatMessageData[]) => void) => {
+    const q = query(
+        collection(db, "groups", groupId, "messages"),
+        orderBy("createdAt", "asc"),
+        limit(100)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const messages = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as ChatMessageData));
+        callback(messages);
+    });
+};
+
+export const deleteGroupChatMessage = async (groupId: string, messageId: string) => {
+    try {
+        await deleteDoc(doc(db, "groups", groupId, "messages", messageId));
+    } catch (error) {
+        console.error("Error deleting group message:", error);
         throw error;
     }
 };

@@ -77,7 +77,7 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       console.error("Login error:", err);
-      
+
       // Better error messages
       if (err.code === "auth/user-not-found") {
         setError("No account found with this email.");
@@ -87,6 +87,8 @@ export default function LoginPage() {
         setError("Invalid email format.");
       } else if (err.code === "auth/too-many-requests") {
         setError("Too many failed attempts. Try again later.");
+      } else if (err.code === "auth/invalid-credential") {
+        setError("Invalid email or password.");
       } else {
         setError("Authentication failed. Please try again.");
       }

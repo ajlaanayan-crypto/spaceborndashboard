@@ -14,6 +14,7 @@ import {
     getGroupMembers,
     removeGroupMember,
     canAddMoreGroups,
+    deleteGroup,
     GroupData,
     GroupMemberData
 } from "@/services/groupService";
@@ -117,12 +118,8 @@ export default function AdminGroupsPage() {
         try {
             if (!editingGroup) {
                 // Create new group
-                const canAdd = await canAddMoreGroups();
-                if (!canAdd) {
-                    setError("Maximum 5 active groups allowed");
-                    setCreating(false);
-                    return;
-                }
+                // Removed limit check as per requirement
+                // const canAdd = await canAddMoreGroups();
 
                 const leadUser = formData.leadId ? allUsers.find(u => u.uid === formData.leadId) : null;
 
@@ -135,7 +132,7 @@ export default function AdminGroupsPage() {
                         userId: leadUser.uid!,
                         userName: leadUser.name || "Unknown",
                         userEmail: leadUser.email || "",
-                        role: (leadUser.role === 'admin' ? 'core_employee' : leadUser.role) as 'core_employee' | 'intern', // Map admin to core for type safety or keep original
+                        role: (leadUser.role === 'admin' ? 'core_employee' : (leadUser.role || 'member')) as 'core_employee' | 'intern', // Map admin to core for type safety or keep original
                         isLead: true,
                         status: 'active',
                     });
@@ -152,7 +149,7 @@ export default function AdminGroupsPage() {
                             userId: memberUser.uid!,
                             userName: memberUser.name || "Unknown",
                             userEmail: memberUser.email || "",
-                            role: (memberUser.role === 'admin' ? 'core_employee' : memberUser.role) as 'core_employee' | 'intern',
+                            role: (memberUser.role === 'admin' ? 'core_employee' : (memberUser.role || 'member')) as 'core_employee' | 'intern',
                             isLead: false,
                             status: 'active',
                         });
@@ -199,13 +196,20 @@ export default function AdminGroupsPage() {
         }
     };
 
+    const handleDelete = async (groupId: string) => {
+        if (!confirm("Permanently DELETE this group and remove all members? This cannot be undone.")) return;
+        try {
+            await deleteGroup(groupId);
+            fetchGroups();
+        } catch (error) {
+            console.error(error);
+            alert("Failed to delete group");
+        }
+    };
+
     const handleActivate = async (groupId: string) => {
         try {
-            const canAdd = await canAddMoreGroups();
-            if (!canAdd) {
-                alert("Maximum 5 active groups allowed. Archive another group first.");
-                return;
-            }
+            // Limit check removed
             await activateGroup(groupId);
             fetchGroups();
         } catch (error) {
@@ -276,7 +280,7 @@ export default function AdminGroupsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-white mb-2">Group Management</h1>
-                    <p className="text-gray-400">Manage teams and assign group leads ({activeGroups.length}/5 active)</p>
+                    <p className="text-gray-400">Manage teams and assign group leads ({activeGroups.length} active)</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -297,8 +301,7 @@ export default function AdminGroupsPage() {
                     </button>
                     <button
                         onClick={() => handleOpenModal()}
-                        disabled={activeGroups.length >= 5}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
                     >
                         <Plus className="w-5 h-5" />
                         Create Group
@@ -371,9 +374,17 @@ export default function AdminGroupsPage() {
                                     </button>
                                     <button
                                         onClick={() => handleArchive(group.id!)}
-                                        className="py-2 px-3 rounded bg-red-600 hover:bg-red-500 text-white text-sm transition-colors"
+                                        className="py-2 px-3 rounded bg-yellow-600 hover:bg-yellow-500 text-white text-sm transition-colors"
+                                        title="Archive Group"
                                     >
                                         <Archive className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(group.id!)}
+                                        className="py-2 px-3 rounded bg-red-600 hover:bg-red-500 text-white text-sm transition-colors"
+                                        title="Delete Group"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
                             </GlassCard>
@@ -483,7 +494,7 @@ export default function AdminGroupsPage() {
                                                         }}
                                                     />
                                                     <span className="text-sm text-gray-300">
-                                                        {user.name} <span className="text-xs text-gray-500">({user.role?.replace('_', ' ')})</span>
+                                                        {user.name} <span className="text-xs text-gray-500">({user.role?.replace('_', ' ') || 'Member'})</span>
                                                     </span>
                                                 </label>
                                             ))}
@@ -535,7 +546,7 @@ export default function AdminGroupsPage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs px-2 py-1 rounded bg-blue-500/10 text-blue-400">
-                                                {member.role.replace('_', ' ')}
+                                                {member.role?.replace('_', ' ') || 'Member'}
                                             </span>
                                             {member.isLead && (
                                                 <span className="text-xs px-2 py-1 rounded bg-purple-500/10 text-purple-400">

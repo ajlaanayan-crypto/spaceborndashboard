@@ -9,6 +9,7 @@ import { db } from "@/lib/firebase";
 import { UserData } from "@/services/userService";
 import { getUserTasks, TaskData } from "@/services/taskService";
 import { getReportsByUser, ReportData, getFeedbackForUser, FeedbackData } from "@/services/reportService";
+import { updateUserName } from "@/services/userService";
 import {
     ArrowLeft,
     Loader2,
@@ -22,6 +23,9 @@ import {
     Calendar,
     MessageSquare,
     Star,
+    Edit2,
+    Check,
+    X,
 } from "lucide-react";
 
 export default function UserProfilePage() {
@@ -34,6 +38,9 @@ export default function UserProfilePage() {
     const [reports, setReports] = useState<ReportData[]>([]);
     const [feedback, setFeedback] = useState<FeedbackData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newName, setNewName] = useState("");
+    const [updatingName, setUpdatingName] = useState(false);
 
     useEffect(() => {
         if (userId) fetchUserData();
@@ -63,6 +70,31 @@ export default function UserProfilePage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleUpdateName = async () => {
+        if (!userId || !newName.trim()) return;
+
+        setUpdatingName(true);
+        try {
+            await updateUserName(userId, newName.trim());
+            setIsEditingName(false);
+            // Refresh user data
+            const userDoc = await getDoc(doc(db, "users", userId));
+            if (userDoc.exists()) {
+                setUser({ uid: userDoc.id, ...userDoc.data() } as UserData);
+            }
+        } catch (error) {
+            console.error("Error updating name:", error);
+            alert("Failed to update name");
+        } finally {
+            setUpdatingName(false);
+        }
+    };
+
+    const startEditing = () => {
+        setNewName(user?.name || "");
+        setIsEditingName(true);
     };
 
     if (loading) {
@@ -124,9 +156,44 @@ export default function UserProfilePage() {
                         size="large"
                     />
                     <div className="flex-1">
-                        <h1 className="text-3xl font-bold text-white mb-1">
-                            {user.name}
-                        </h1>
+                        <div className="flex items-center gap-3 mb-1">
+                            {isEditingName ? (
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={newName}
+                                        onChange={(e) => setNewName(e.target.value)}
+                                        className="bg-black/40 border border-white/10 rounded px-2 py-1 text-white text-xl font-bold focus:outline-none focus:border-blue-500"
+                                        autoFocus
+                                    />
+                                    <button
+                                        onClick={handleUpdateName}
+                                        disabled={updatingName}
+                                        className="p-1 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30"
+                                    >
+                                        <Check className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => setIsEditingName(false)}
+                                        className="p-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <h1 className="text-3xl font-bold text-white">
+                                        {user.name}
+                                    </h1>
+                                    <button
+                                        onClick={startEditing}
+                                        className="text-gray-400 hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                        <Edit2 className="w-4 h-4" />
+                                    </button>
+                                </>
+                            )}
+                        </div>
                         <div className="flex flex-wrap items-center gap-3 text-sm">
                             <span className="flex items-center gap-1 text-gray-400">
                                 <Mail className="w-4 h-4" />
@@ -139,7 +206,7 @@ export default function UserProfilePage() {
                                 {user.role === "admin" && (
                                     <Shield className="w-3 h-3 inline mr-1" />
                                 )}
-                                {user.role?.replace("_", " ")}
+                                {user.role ? user.role.replace("_", " ") : "No Role"}
                             </span>
                             <span
                                 className={`px-2 py-0.5 rounded text-xs ${user.status === "active"
@@ -254,7 +321,7 @@ export default function UserProfilePage() {
                                                         : "bg-gray-500/20 text-gray-400"
                                                 }`}
                                         >
-                                            {task.status.replace("_", " ")}
+                                            {task.status?.replace("_", " ") || "Pending"}
                                         </span>
                                     </div>
                                     <p className="text-xs text-gray-400 line-clamp-1">

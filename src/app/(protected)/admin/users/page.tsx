@@ -2,10 +2,10 @@
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { UserAvatar } from "@/components/ui/UserAvatar";
-import { UserPlus, Shield, Loader2, Edit2, Key, ChevronDown, Eye, Trash2, AlertTriangle } from "lucide-react";
+import { UserPlus, Shield, Loader2, Edit2, Key, ChevronDown, Eye, Trash2, AlertTriangle, PenLine } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getAllUsers, UserData, updateUserStatus } from "@/services/userService";
+import { getAllUsers, UserData, updateUserStatus, updateUserName } from "@/services/userService";
 import { SessionManager } from "@/components/admin/SessionManager";
 import { auth } from "@/lib/firebase";
 
@@ -18,6 +18,12 @@ export default function UserManagementPage() {
     const [showSessionModal, setShowSessionModal] = useState(false);
     const [showRoleModal, setShowRoleModal] = useState(false);
     const [editingUser, setEditingUser] = useState<UserData | null>(null);
+
+    // Rename State
+    const [showRenameModal, setShowRenameModal] = useState(false);
+    const [renamingUser, setRenamingUser] = useState<UserData | null>(null);
+    const [newName, setNewName] = useState("");
+    const [updatingName, setUpdatingName] = useState(false);
 
     // Form State
     const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "intern" });
@@ -78,6 +84,27 @@ export default function UserManagementPage() {
             setError(err.message);
         } finally {
             setCreating(false);
+        }
+    };
+
+    const handleUpdateName = async () => {
+        if (!renamingUser || !newName.trim()) return;
+        setUpdatingName(true);
+        setError("");
+
+        try {
+            await updateUserName(renamingUser.uid, newName.trim());
+            setSuccess("Name updated successfully!");
+            setTimeout(() => {
+                setShowRenameModal(false);
+                setSuccess("");
+                setRenamingUser(null);
+                fetchUsers();
+            }, 1000);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setUpdatingName(false);
         }
     };
 
@@ -252,7 +279,7 @@ export default function UserManagementPage() {
                                                 'bg-green-500/10 text-green-400'
                                             }`}>
                                             {user.role === 'admin' && <Shield className="w-3 h-3" />}
-                                            {user.role?.replace("_", " ")}
+                                            {user.role ? user.role.replace("_", " ") : "No Role"}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
@@ -263,6 +290,18 @@ export default function UserManagementPage() {
 
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setRenamingUser(user);
+                                                    setNewName(user.name);
+                                                    setShowRenameModal(true);
+                                                }}
+                                                className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm px-2 py-1 bg-yellow-500/10 rounded flex items-center gap-1"
+                                                title="Rename User"
+                                            >
+                                                <PenLine className="w-3 h-3" />
+                                                Rename
+                                            </button>
                                             <button
                                                 onClick={() => {
                                                     setEditingUser(user);
@@ -316,6 +355,55 @@ export default function UserManagementPage() {
                 </div>
             </GlassCard>
 
+            {/* Rename Modal */}
+            {showRenameModal && renamingUser && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <GlassCard className="w-full max-w-md border-2 border-yellow-500/30">
+                        <h2 className="text-xl font-bold text-white mb-4">Rename User</h2>
+                        <p className="text-gray-400 text-sm mb-4">
+                            Update name for <span className="text-white font-medium">{renamingUser.email}</span>
+                        </p>
+
+                        {error && <p className="text-red-400 text-sm mb-4 bg-red-500/10 p-2 rounded">{error}</p>}
+                        {success && <p className="text-green-400 text-sm mb-4 bg-green-500/10 p-2 rounded">{success}</p>}
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-1">Full Name</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-black/40 border border-white/10 rounded p-2 text-white focus:outline-none focus:border-yellow-500"
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowRenameModal(false);
+                                        setError("");
+                                        setSuccess("");
+                                    }}
+                                    className="flex-1 py-2 rounded bg-white/5 text-gray-300 hover:bg-white/10 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleUpdateName}
+                                    disabled={updatingName || !newName.trim()}
+                                    className="flex-1 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-500 transition-colors flex items-center justify-center disabled:opacity-50"
+                                >
+                                    {updatingName ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update Name"}
+                                </button>
+                            </div>
+                        </div>
+                    </GlassCard>
+                </div>
+            )}
+
             {/* Role Change Modal */}
             {showRoleModal && editingUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -332,7 +420,7 @@ export default function UserManagementPage() {
                             <div>
                                 <label className="block text-sm text-gray-400 mb-1">Current Role</label>
                                 <div className="p-2 bg-black/40 border border-white/10 rounded text-white">
-                                    {editingUser.role?.replace("_", " ")}
+                                    {editingUser.role ? editingUser.role.replace("_", " ") : "No Role"}
                                 </div>
                             </div>
 

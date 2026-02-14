@@ -3,13 +3,15 @@
 import { GlassCard } from "@/components/ui/GlassCard";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
-import { updateUserProfileImage, removeUserProfileImage } from "@/services/userService";
+import { updateUserProfileImage, removeUserProfileImage, updateUserName } from "@/services/userService";
 import { useState, useRef } from "react";
-import { Camera, Loader2, Trash2, User } from "lucide-react";
+import { Camera, Loader2, Trash2, User, Edit2, Check, X } from "lucide-react";
 
 export default function ProfilePage() {
     const { user, refreshUser } = useAuth();
     const [uploading, setUploading] = useState(false);
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newName, setNewName] = useState("");
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +66,30 @@ export default function ProfilePage() {
         } finally {
             setUploading(false);
         }
+    };
+
+    const handleUpdateName = async () => {
+        if (!user?.uid || !newName.trim()) return;
+
+        setUploading(true);
+        setError("");
+        setSuccess("");
+
+        try {
+            await updateUserName(user.uid, newName.trim());
+            setSuccess("Name updated successfully!");
+            setIsEditingName(false);
+            if (refreshUser) await refreshUser();
+        } catch (err: any) {
+            setError(err.message || "Failed to update name");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const startEditingName = () => {
+        setNewName(user?.displayName || user?.name || "");
+        setIsEditingName(true);
     };
 
     if (!user) {
@@ -161,12 +187,48 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm text-gray-400 mb-1">Name</label>
-                        <input
-                            type="text"
-                            value={user.displayName || user.name || ""}
-                            disabled
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white"
-                        />
+                        <div className="flex items-center gap-2">
+                            {isEditingName ? (
+                                <>
+                                    <input
+                                        type="text"
+                                        value={newName}
+                                        onChange={(e) => setNewName(e.target.value)}
+                                        className="flex-1 bg-black/40 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500"
+                                        placeholder="Enter your name"
+                                        autoFocus
+                                    />
+                                    <button
+                                        onClick={handleUpdateName}
+                                        disabled={uploading || !newName.trim()}
+                                        className="p-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors disabled:opacity-50"
+                                    >
+                                        <Check className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => setIsEditingName(false)}
+                                        className="p-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <input
+                                        type="text"
+                                        value={user.displayName || user.name || ""}
+                                        disabled
+                                        className="flex-1 bg-black/40 border border-white/10 rounded-lg p-3 text-white opacity-70"
+                                    />
+                                    <button
+                                        onClick={startEditingName}
+                                        className="p-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
+                                    >
+                                        <Edit2 className="w-5 h-5" />
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     </div>
 
                     <div>
@@ -175,7 +237,7 @@ export default function ProfilePage() {
                             type="email"
                             value={user.email || ""}
                             disabled
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white"
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white opacity-70"
                         />
                     </div>
 
@@ -185,7 +247,7 @@ export default function ProfilePage() {
                             type="text"
                             value={user.role?.replace("_", " ") || ""}
                             disabled
-                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white capitalize"
+                            className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-white capitalize opacity-70"
                         />
                     </div>
                 </div>

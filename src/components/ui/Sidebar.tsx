@@ -14,6 +14,7 @@ import {
     DollarSign,
     Mail,
     Calendar,
+    MessageCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { auth } from "@/lib/firebase";
@@ -48,7 +49,8 @@ export function Sidebar() {
                 { href: "/admin", label: "Admin Overview", icon: LayoutDashboard },
                 { href: "/admin/users", label: "User Management", icon: Users },
                 { href: "/admin/groups", label: "Group Management", icon: Users },
-                { href: "/admin/messages", label: "Messages", icon: Mail },
+                { href: "/chat", label: "Team Chat", icon: MessageCircle }, // New Chat
+                { href: "/admin/messages", label: "Broadcasts", icon: Mail }, // Renamed from Messages to avoid confusion
                 { href: "/admin/finance", label: "Finance & Revenue", icon: DollarSign },
                 { href: "/admin/meetings", label: "Meetings", icon: ClipboardList },
                 { href: "/admin/tasks", label: "All Tasks", icon: ClipboardList },
@@ -61,6 +63,7 @@ export function Sidebar() {
         if (role === "core_employee") {
             return [
                 { href: "/core", label: "Dashboard", icon: LayoutDashboard },
+                { href: "/chat", label: "Team Chat", icon: MessageCircle }, // New Chat
                 { href: "/core/tasks", label: "Task Management", icon: Briefcase },
                 { href: "/core/weekly", label: "Weekly Planning", icon: ClipboardList },
                 { href: "/core/meetings", label: "Meetings", icon: Calendar },
@@ -75,6 +78,7 @@ export function Sidebar() {
         if (role === "normal_employee") {
             return [
                 { href: "/employee", label: "My Workspace", icon: LayoutDashboard },
+                { href: "/chat", label: "Team Chat", icon: MessageCircle }, // New Chat
                 { href: "/employee/tasks", label: "My Tasks", icon: ClipboardList },
                 { href: "/employee/meetings", label: "Meetings", icon: Calendar },
                 { href: "/group", label: "My Group", icon: Users },
@@ -86,6 +90,7 @@ export function Sidebar() {
         if (role === "intern") {
             return [
                 { href: "/intern", label: "Dashboard", icon: LayoutDashboard },
+                { href: "/chat", label: "Team Chat", icon: MessageCircle }, // New Chat
                 { href: "/group", label: "My Group", icon: Users },
                 { href: "/intern/tasks", label: "My Tasks", icon: ClipboardList },
                 { href: "/intern/meetings", label: "Meetings", icon: Calendar },

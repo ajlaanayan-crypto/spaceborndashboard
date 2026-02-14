@@ -13,6 +13,7 @@ export interface GroupData {
     createdBy?: string;
     updatedAt?: any;
     maxMembers?: number;
+    lastMessageAt?: any;
 }
 
 export interface GroupMemberData {
@@ -201,6 +202,27 @@ export const isUserGroupLead = async (userId: string, groupId: string): Promise<
 
 // Validation
 export const canAddMoreGroups = async (): Promise<boolean> => {
-    const activeGroups = await getActiveGroups();
-    return activeGroups.length < 5; // Max 5 active groups
+    // Limit removed as per requirement
+    return true;
+};
+
+export const deleteGroup = async (groupId: string) => {
+    // 1. Delete Group Doc
+    await deleteDoc(doc(db, "groups", groupId));
+
+    // 2. Delete All Members of this group
+    const membersQuery = query(collection(db, "groupMembers"), where("groupId", "==", groupId));
+    const membersSnapshot = await getDocs(membersQuery);
+
+    const batch = writeBatch(db);
+    membersSnapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+
+    // 3. Optional: Delete messages collection (if subcollection)
+    // Firestore requires recursive delete for subcollections, which is best done via Cloud Functions 
+    // or by client-side listing (expensive). For now, we leave subcollections 
+    // as they are orphaned and won't be accessed.
 };

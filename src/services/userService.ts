@@ -27,6 +27,10 @@ export const updateUserStatus = async (uid: string, status: "active" | "inactive
     await updateDoc(doc(db, "users", uid), { status });
 };
 
+export const updateUserName = async (uid: string, name: string) => {
+    await updateDoc(doc(db, "users", uid), { name });
+};
+
 export const getUsersByRole = async (role: UserRole) => {
     const q = query(collection(db, "users"), where("role", "==", role));
     const querySnapshot = await getDocs(q);
