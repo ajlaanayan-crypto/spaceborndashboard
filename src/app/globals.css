@@ -10,14 +10,14 @@
   --color-primary: #FFFFFF;
   --color-primary-foreground: #000000;
 
-  --color-secondary: rgba(255, 255, 255, 0.1);
+  --color-secondary: rgba(255,255,255,0.1);
   --color-secondary-foreground: #FFFFFF;
 
   --color-accent: #525252;
   --color-accent-foreground: #FFFFFF;
 
   --color-glass: rgba(255, 255, 255, 0.05);
-  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-glass-border: rgba(255,255,255,0.1);
 
   --animate-float: float 6s ease-in-out infinite;
 }
@@ -81,7 +81,7 @@ h6 {
 }
 
 .glass-card {
-  @apply rounded-xl p-6 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255, 255, 255, 0.1)];
+  @apply rounded-xl p-6 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)];
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -90,7 +90,7 @@ h6 {
 }
 
 .liquid-glass {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255, 255, 255, 0));
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.18);
