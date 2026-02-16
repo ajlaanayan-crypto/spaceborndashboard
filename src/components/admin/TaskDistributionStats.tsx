@@ -104,7 +104,7 @@ export function TaskDistributionStats({ users, tasks, groups }: TaskDistribution
                                     dataKey="value"
                                 >
                                     {data.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} Stroke="none" />
+                                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                                     ))}
                                 </Pie>
                                 <Tooltip
