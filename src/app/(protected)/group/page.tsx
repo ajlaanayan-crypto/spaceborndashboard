@@ -298,7 +298,7 @@ export default function GroupDashboardPage() {
                                     <h3 className="text-lg font-bold text-white">Resources</h3>
                                 </div>
                                 {resources.length > 0 ? (
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                                         {resources.map((resource) => (
                                             <a
                                                 key={resource.id}
@@ -308,7 +308,7 @@ export default function GroupDashboardPage() {
                                                 className="block p-3 bg-white/5 rounded hover:bg-white/10 transition-colors group"
                                             >
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <Link className="w-3 h-3 text-blue-400" />
+                                                    <Link className="w-3 h-3 text-blue-400 shrink-0" />
                                                     <p className="text-sm font-medium text-blue-300 group-hover:text-blue-200 truncate">
                                                         {resource.title}
                                                     </p>

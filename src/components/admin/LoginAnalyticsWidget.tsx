@@ -28,7 +28,7 @@ export function LoginAnalyticsWidget() {
     }, []);
 
     return (
-        <GlassCard className="h-full flex flex-col">
+        <GlassCard className="h-full min-h-[350px] flex flex-col">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-white">Recent Logins</h3>
                 <Clock className="w-5 h-5 text-blue-400" />
@@ -45,15 +45,15 @@ export function LoginAnalyticsWidget() {
             ) : (
                 <div className="space-y-3 flex-1 overflow-y-auto">
                     {logins.map((log) => (
-                        <div key={log.id} className="flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10 transition-colors">
-                            <div className="flex items-center gap-3">
-                                <UserAvatar name={log.userName} size="small" />
-                                <div>
-                                    <p className="text-white text-sm font-medium">{log.userName}</p>
-                                    <p className="text-xs text-gray-400">{log.role?.replace('_', ' ') || 'User'}</p>
+                        <div key={log.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors gap-4">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <UserAvatar name={log.userName} photoURL={log.userPhoto} size="small" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-white text-sm font-medium truncate">{log.userName}</p>
+                                    <p className="text-xs text-gray-400 truncate capitalize">{log.role?.replace('_', ' ') || 'User'}</p>
                                 </div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right whitespace-nowrap shrink-0">
                                 <p className="text-xs text-gray-400">
                                     {log.timestamp ? formatDistanceToNow(log.timestamp.toDate(), { addSuffix: true }) : 'Just now'}
                                 </p>
@@ -65,17 +65,12 @@ export function LoginAnalyticsWidget() {
 
             <div className="mt-4 pt-3 border-t border-white/10">
                 <button
-                    onClick={() => setShowHistory(true)}
+                    onClick={() => window.location.href = "/admin/history"}
                     className="w-full py-2 text-sm text-center text-blue-400 hover:text-blue-300 transition-colors flex items-center justify-center gap-2"
                 >
                     View All History <ExternalLink className="w-3 h-3" />
                 </button>
             </div>
-
-            <LoginHistoryModal
-                isOpen={showHistory}
-                onClose={() => setShowHistory(false)}
-            />
         </GlassCard>
     );
 }

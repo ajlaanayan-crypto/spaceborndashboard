@@ -23,6 +23,10 @@ export default function AdminTasksPage() {
     const [users, setUsers] = useState<UserData[]>([]);
     const [groups, setGroups] = useState<GroupData[]>([]);
 
+    // Import KanbanBoard dynamically or statically
+    // For now assuming static is fine as it's client component
+
+
     const fetchTasks = () => {
         setLoading(true);
         Promise.all([
@@ -105,7 +109,7 @@ export default function AdminTasksPage() {
                     onClick={() => setViewMode('distribution')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${viewMode === 'distribution' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
                 >
-                    <LayoutDashboard className="w-4 h-4" />
+                    <User className="w-4 h-4" />
                     Distribution Analytics
                 </button>
             </div>

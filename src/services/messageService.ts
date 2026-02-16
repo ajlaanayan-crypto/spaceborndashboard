@@ -206,23 +206,44 @@ export interface ChatMessageData {
     senderId: string;
     senderName: string;
     senderRole?: string;
+    senderPhoto?: string;
     content: string;
+    type?: 'text' | 'audio' | 'image';
+    fileUrl?: string;
+    duration?: number; // In seconds, for audio
+    replyTo?: {
+        id: string;
+        content: string;
+        senderName: string;
+    };
+    mentions?: string[]; // Array of User IDs
     createdAt: any;
 }
 
 export const sendGroupChatMessage = async (
     groupId: string,
     content: string,
-    sender: { uid: string, name: string, role?: string }
+    sender: { uid: string, name: string, role?: string, photoURL?: string },
+    replyTo?: ChatMessageData['replyTo'],
+    mentions?: string[],
+    type: 'text' | 'audio' | 'image' = 'text',
+    fileUrl?: string,
+    duration?: number
 ) => {
-    if (!content.trim()) return;
+    if (!content.trim() && type === 'text') return; // Only block empty text messages
 
     await addDoc(collection(db, "groups", groupId, "messages"), {
         groupId,
         senderId: sender.uid,
         senderName: sender.name,
         senderRole: sender.role || 'member',
+        senderPhoto: sender.photoURL || null,
         content: content.trim(),
+        type,
+        fileUrl: fileUrl || null,
+        duration: duration || null,
+        replyTo: replyTo || null,
+        mentions: mentions || [],
         createdAt: serverTimestamp(),
     });
 

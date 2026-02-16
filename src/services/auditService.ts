@@ -31,6 +31,7 @@ export interface LoginLog {
     role: string;
     timestamp: any;
     userAgent?: string;
+    userPhoto?: string;
 }
 
 export const logUserLogin = async (user: UserData) => {
@@ -45,6 +46,7 @@ export const logUserLogin = async (user: UserData) => {
             role: user.role,
             timestamp: serverTimestamp(),
             userAgent: window.navigator.userAgent,
+            userPhoto: user.photoURL || null,
         });
 
         // 2. Update user's lastLogin field

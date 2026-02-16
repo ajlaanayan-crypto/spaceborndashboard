@@ -7,8 +7,9 @@ import { getUserTasks, updateTaskStatus, TaskData } from "@/services/taskService
 import { useAuth } from "@/context/AuthContext";
 import { getUserGroups } from "@/services/groupService";
 
+
 export default function InternTasksPage() {
-    const { user } = useAuth();
+    const { user, activeGroupId } = useAuth();
     const [tasks, setTasks] = useState<TaskData[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -21,7 +22,10 @@ export default function InternTasksPage() {
                 const groupIds = groups.map(g => g.id).filter(id => !!id) as string[];
 
                 // 2. Get tasks (both individual and group)
-                const userTasks = await getUserTasks(user.uid, groupIds);
+                // Filter by activeGroupId if present
+                const targetGroups = activeGroupId ? [activeGroupId] : groupIds;
+
+                const userTasks = await getUserTasks(user.uid, targetGroups);
                 setTasks(userTasks);
             } catch (error) {
                 console.error("Error refreshing tasks:", error);
@@ -33,7 +37,7 @@ export default function InternTasksPage() {
 
     useEffect(() => {
         if (user) refreshTasks();
-    }, [user]);
+    }, [user, activeGroupId]);
 
     const handleStatusChange = async (taskId: string, newStatus: TaskData["status"]) => {
         await updateTaskStatus(taskId, newStatus);

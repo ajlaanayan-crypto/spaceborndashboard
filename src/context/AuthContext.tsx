@@ -6,6 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { logUserLogin } from "@/services/auditService";
 import { UserData } from "@/services/userService";
+import { getUserGroups, GroupData } from "@/services/groupService";
 
 export type UserRole = "admin" | "core_employee" | "normal_employee" | "intern" | "guest" | null;
 
@@ -22,6 +23,9 @@ interface AuthContextType {
     canAccessRoute: (route: string) => boolean;
     hasPermission: (requiredRole: UserRole) => boolean;
     refreshUser: () => Promise<void>;
+    activeGroupId: string | null;
+    setActiveGroupId: (id: string | null) => void;
+    userGroups: GroupData[];
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -31,6 +35,9 @@ const AuthContext = createContext<AuthContextType>({
     canAccessRoute: () => false,
     hasPermission: () => false,
     refreshUser: async () => { },
+    activeGroupId: null,
+    setActiveGroupId: () => { },
+    userGroups: [],
 });
 
 // Role hierarchy: admin > core_employee > normal_employee > intern
@@ -46,6 +53,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<CustomUser | null>(null);
     const [role, setRole] = useState<UserRole>(null);
     const [loading, setLoading] = useState(true);
+    const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+    const [userGroups, setUserGroups] = useState<GroupData[]>([]);
 
     const loadUserData = async (currentUser: User) => {
         try {
@@ -62,10 +71,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 };
                 setUser(extendedUser);
 
+                // Fetch User Groups
+                try {
+                    const groups = await getUserGroups(currentUser.uid);
+                    setUserGroups(groups);
+                    if (groups.length > 0 && !activeGroupId) {
+                        setActiveGroupId(groups[0].id || null);
+                    }
+                } catch (groupError) {
+                    console.error("Error fetching user groups:", groupError);
+                }
+
                 // Log login if new session
                 const sessionKey = `login_logged_${currentUser.uid}`;
                 if (!sessionStorage.getItem(sessionKey)) {
-                    logUserLogin(userData as UserData);
+                    logUserLogin({
+                        ...userData,
+                        uid: currentUser.uid,
+                        photoURL: userData.photoURL || currentUser.photoURL
+                    } as UserData);
                     sessionStorage.setItem(sessionKey, "true");
                 }
             } else {
@@ -92,6 +116,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             } else {
                 setUser(null);
                 setRole(null);
+                setUserGroups([]);
+                setActiveGroupId(null);
             }
             setLoading(false);
         });
@@ -130,7 +156,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, role, loading, canAccessRoute, hasPermission, refreshUser }}>
+        <AuthContext.Provider value={{
+            user,
+            role,
+            loading,
+            canAccessRoute,
+            hasPermission,
+            refreshUser,
+            activeGroupId,
+            setActiveGroupId,
+            userGroups
+        }}>
             {children}
         </AuthContext.Provider>
     );

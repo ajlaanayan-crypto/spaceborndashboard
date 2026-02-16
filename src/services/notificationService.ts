@@ -4,7 +4,7 @@ import { db } from "@/lib/firebase";
 export interface NotificationData {
     id?: string;
     userId: string;
-    type: 'task_assigned' | 'group_added' | 'meeting_scheduled' | 'weekly_plan' | 'announcement' | 'general';
+    type: 'task_assigned' | 'group_added' | 'meeting_scheduled' | 'weekly_plan' | 'announcement' | 'general' | 'chat_mention' | 'chat_reply';
     title: string;
     message: string;
     link?: string; // Optional link to relevant page

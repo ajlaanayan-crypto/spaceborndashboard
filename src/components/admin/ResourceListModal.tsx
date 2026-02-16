@@ -75,7 +75,7 @@ export default function ResourceListModal({ isOpen, onClose, group, onAddResourc
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 min-h-[300px]">
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 min-h-[300px] max-h-[60vh]">
                     {loading ? (
                         <div className="flex items-center justify-center h-full">
                             <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />

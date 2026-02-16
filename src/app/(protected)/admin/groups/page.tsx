@@ -568,7 +568,7 @@ export default function AdminGroupsPage() {
                         {/* Current Members */}
                         <div className="mb-6">
                             <h3 className="text-lg font-semibold text-white mb-3">Current Members ({groupMembers.length})</h3>
-                            <div className="space-y-2">
+                            <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                                 {groupMembers.map((member) => (
                                     <div key={member.id} className="flex items-center justify-between p-3 bg-white/5 rounded">
                                         <div>

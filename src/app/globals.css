@@ -10,14 +10,14 @@
   --color-primary: #FFFFFF;
   --color-primary-foreground: #000000;
 
-  --color-secondary: rgba(255,255,255,0.1);
+  --color-secondary: rgba(255, 255, 255, 0.1);
   --color-secondary-foreground: #FFFFFF;
 
   --color-accent: #525252;
   --color-accent-foreground: #FFFFFF;
 
   --color-glass: rgba(255, 255, 255, 0.05);
-  --color-glass-border: rgba(255,255,255,0.1);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
 
   --animate-float: float 6s ease-in-out infinite;
 }
@@ -81,7 +81,7 @@ h6 {
 }
 
 .glass-card {
-  @apply rounded-xl p-6 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)];
+  @apply rounded-xl p-6 transition-all duration-300;
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -89,10 +89,39 @@ h6 {
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
+.glass-card:hover {
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+}
+
 .liquid-glass {
-  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255, 255, 255, 0));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }

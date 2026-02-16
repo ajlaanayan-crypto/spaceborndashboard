@@ -51,12 +51,19 @@ service cloud.firestore {
     }
     
     // ==========================================
-    // GROUPS 
+    // GROUPS & GROUP MESSAGES
     // ==========================================
     match /groups/{groupId} {
       allow read: if isAuthenticated();
       allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
+      
+      // Group Chat Messages
+      match /messages/{messageId} {
+        allow read, list: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isAuthenticated(); // Allow sender/admin to delete? For now permissive.
+      }
       
       match /{document=**} {
         allow read, write: if isAuthenticated();
@@ -87,6 +94,21 @@ service cloud.firestore {
     }
     
     // ==========================================
+    // ANSH TRACKER (Topics & Subtopics)
+    // ==========================================
+    match /ansh_topics/{topicId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated(); // Admins primarily, but permissive for now
+      allow delete: if isAdmin();
+    }
+
+    match /ansh_subtopics/{subtopicId} {
+        allow read: if isAuthenticated();
+        allow create, update: if isAuthenticated();
+        allow delete: if isAdmin(); // Or creator?
+    }
+    
+    // ==========================================
     // NOTIFICATIONS
     // ==========================================
     match /notifications/{notifId} {
@@ -97,8 +119,7 @@ service cloud.firestore {
     }
     
     // ==========================================
-    // MESSAGES
-    // Non-admin users need read access for their messages
+    // MESSAGES (Direct & Broadcast)
     // ==========================================
     match /messages/{messageId} {
       allow read: if isAuthenticated();

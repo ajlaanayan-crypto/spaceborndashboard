@@ -11,6 +11,8 @@ import {
     orderBy
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { createNotification, sendBulkNotifications } from "./notificationService";
+import { getGroupMembers } from "./groupService";
 
 export interface Subtask {
     id: string;
@@ -50,6 +52,39 @@ export const createTask = async (task: Omit<TaskData, 'id' | 'createdAt'>) => {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         });
+
+        // Trigger Notification
+        if (task.assignedTo && task.assignedTo !== task.assignedBy) {
+            await createNotification({
+                userId: task.assignedTo,
+                type: 'task_assigned',
+                title: 'New Task Assigned',
+                message: `You have been assigned a new task: "${task.title}"`,
+                link: '/employee/tasks', // Default link, can be refined based on role
+                isRead: false
+            });
+        } else if (task.assignedToGroup && task.groupId) {
+            // Fetch group members and send bulk notification
+            try {
+                const members = await getGroupMembers(task.groupId);
+                const recipientIds = members
+                    .map(m => m.userId)
+                    .filter(id => id !== task.assignedBy); // Don't notify creator
+
+                if (recipientIds.length > 0) {
+                    await sendBulkNotifications(recipientIds, {
+                        type: 'task_assigned',
+                        title: 'New Group Task',
+                        message: `A new task "${task.title}" has been assigned to your group.`,
+                        link: '/employee/tasks',
+                        isRead: false
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to send group notifications:", error);
+            }
+        }
+
         return docRef.id;
     } catch (error) {
         console.error("Error creating task:", error);
