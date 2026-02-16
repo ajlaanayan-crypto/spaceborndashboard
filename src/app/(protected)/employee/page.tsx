@@ -140,17 +140,17 @@ export default function EmployeeDashboard() {
                                 {activeTasks.slice(0, 5).map(task => (
                                     <div key={task.id} className="p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors relative overflow-hidden group">
                                         <div className={`absolute left-0 top-0 bottom-0 w-1 ${task.priority === 'high' ? 'bg-red-500' :
-                                                task.priority === 'medium' ? 'bg-yellow-500' :
-                                                    'bg-blue-500'
+                                            task.priority === 'medium' ? 'bg-yellow-500' :
+                                                'bg-blue-500'
                                             }`}></div>
                                         <div className="pl-4">
                                             <div className="flex justify-between items-start mb-2">
                                                 <h4 className="text-lg font-bold text-white">{task.title}</h4>
                                                 <span className={`text-xs px-2 py-1 rounded capitalize ${task.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
-                                                        task.status === 'review' ? 'bg-purple-500/20 text-purple-400' :
-                                                            'bg-gray-500/20 text-gray-400'
+                                                    task.status === 'review' ? 'bg-purple-500/20 text-purple-400' :
+                                                        'bg-gray-500/20 text-gray-400'
                                                     }`}>
-                                                    {task.status.replace('_', ' ')}
+                                                    {(task.status || 'pending').replace('_', ' ')}
                                                 </span>
                                             </div>
                                             <p className="text-gray-400 text-sm mb-3">{task.description}</p>
@@ -161,8 +161,8 @@ export default function EmployeeDashboard() {
                                                         {task.deadline}
                                                     </span>
                                                     <span className={`capitalize px-2 py-0.5 rounded ${task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                                                            task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                                'bg-blue-500/20 text-blue-400'
+                                                        task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                            'bg-blue-500/20 text-blue-400'
                                                         }`}>
                                                         {task.priority}
                                                     </span>

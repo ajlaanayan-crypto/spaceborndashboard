@@ -5,16 +5,29 @@ import { CheckCircle, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getUserTasks, updateTaskStatus, TaskData } from "@/services/taskService";
 import { useAuth } from "@/context/AuthContext";
+import { getUserGroups } from "@/services/groupService";
 
 export default function InternTasksPage() {
     const { user } = useAuth();
     const [tasks, setTasks] = useState<TaskData[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const refreshTasks = () => {
+    const refreshTasks = async () => {
         if (user) {
             setLoading(true);
-            getUserTasks(user.uid).then(setTasks).finally(() => setLoading(false));
+            try {
+                // 1. Get user groups
+                const groups = await getUserGroups(user.uid);
+                const groupIds = groups.map(g => g.id).filter(id => !!id) as string[];
+
+                // 2. Get tasks (both individual and group)
+                const userTasks = await getUserTasks(user.uid, groupIds);
+                setTasks(userTasks);
+            } catch (error) {
+                console.error("Error refreshing tasks:", error);
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -62,7 +75,7 @@ export default function InternTasksPage() {
                             </div>
 
                             <div className="flex gap-2 mt-4 pt-4 border-t border-white/5">
-                                <span className="text-xs text-gray-500 uppercase tracking-wider py-1.5">Status: {task.status.replace("_", " ")}</span>
+                                <span className="text-xs text-gray-500 uppercase tracking-wider py-1.5">Status: {(task.status || 'pending').replace("_", " ")}</span>
                                 <div className="flex-1"></div>
                                 {task.status !== 'completed' && (
                                     <div className="flex gap-2">

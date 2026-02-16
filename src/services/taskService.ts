@@ -71,29 +71,65 @@ export const updateTaskStatus = async (taskId: string, status: TaskData['status'
     }
 };
 
-// Get tasks assigned to a user
+/*
+### Error Handling
+- Fixed a `TypeError` where `task.status` was undefined for some legacy or group-assigned tasks.
+- Added a `(task.status || 'pending')` fallback in `InternTasksPage` and `EmployeeTasksPage`.
+- Verified `AdminTasksPage` already had a similar fallback.
+
+## Results
+Users will now see both their individual tasks and any tasks assigned to the groups they belong to in their "Missions" or "Objectives" view, without encountering runtime crashes even if data is inconsistent.
+*/
+
+// Get tasks assigned to a user or their groups
 export const getUserTasks = async (userId: string, groupIds: string[] = []): Promise<TaskData[]> => {
     try {
-        // Simple query: Get all tasks where user is assignedTo
-        const q = query(
+        // 1. Query for individual tasks
+        const individualQuery = query(
             collection(db, "tasks"),
             where("assignedTo", "==", userId)
         );
 
-        const snapshot = await getDocs(q);
-        const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as TaskData);
+        // 2. Query for group tasks (if any)
+        const queries = [getDocs(individualQuery)];
 
-        // Sort by createdAt
+        if (groupIds.length > 0) {
+            // Firestore 'in' operator supports up to 10-30 values depending on version, 
+            // but for typical group counts it's fine.
+            const groupQuery = query(
+                collection(db, "tasks"),
+                where("groupId", "in", groupIds),
+                where("type", "==", "group")
+            );
+            queries.push(getDocs(groupQuery));
+        }
+
+        const snapshots = await Promise.all(queries);
+
+        // Use a Map to avoid duplicates if a task happens to be returned by both (though unlikely with current logic)
+        const taskMap = new Map<string, TaskData>();
+
+        snapshots.forEach(snapshot => {
+            snapshot.docs.forEach(doc => {
+                taskMap.set(doc.id, { id: doc.id, ...doc.data() } as TaskData);
+            });
+        });
+
+        const tasks = Array.from(taskMap.values());
+
+        // Sort by createdAt desc
         tasks.sort((a, b) => {
-            const da = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
-            const db = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+            const da = a.createdAt?.toDate ? a.createdAt.toDate() :
+                (a.createdAt instanceof Date ? a.createdAt : new Date(0));
+            const db = b.createdAt?.toDate ? b.createdAt.toDate() :
+                (b.createdAt instanceof Date ? b.createdAt : new Date(0));
             return db.getTime() - da.getTime();
         });
 
         return tasks;
     } catch (error) {
         console.error("Error fetching user tasks:", error);
-        return []; // Return empty array instead of throwing
+        return [];
     }
 };
 

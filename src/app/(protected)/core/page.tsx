@@ -73,7 +73,7 @@ export default function CoreDashboard() {
                                     task.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
                                         'bg-gray-500/20 text-gray-400'
                                     }`}>
-                                    {task.status.replace("_", " ")}
+                                    {(task.status || "pending").replace("_", " ")}
                                 </span>
                             </div>
                         ))}

@@ -239,7 +239,7 @@ export default function GroupDashboardPage() {
                                                     <span className="text-gray-500">{task.deadline}</span>
                                                     <span className={`px-2 py-0.5 rounded ${task.status === 'completed' ? 'text-green-400' : 'text-blue-400'
                                                         }`}>
-                                                        {task.status.replace('_', ' ')}
+                                                        {(task.status || 'pending').replace('_', ' ')}
                                                     </span>
                                                 </div>
                                             </div>
@@ -355,7 +355,7 @@ export default function GroupDashboardPage() {
                                                         {member.userName}
                                                         {member.isLead && <span className="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">Lead</span>}
                                                     </p>
-                                                    <p className="text-xs text-gray-400">{member.role.replace('_', ' ')}</p>
+                                                    <p className="text-xs text-gray-400">{(member.role || 'guest').replace('_', ' ')}</p>
                                                 </div>
                                             </div>
 
@@ -422,7 +422,7 @@ export default function GroupDashboardPage() {
                                                                     </div>
                                                                     <div className="flex justify-between items-center text-gray-500">
                                                                         <span>Due: {task.deadline}</span>
-                                                                        <span>{task.status.replace('_', ' ')}</span>
+                                                                        <span>{(task.status || 'pending').replace('_', ' ')}</span>
                                                                     </div>
                                                                 </div>
                                                             ))}
