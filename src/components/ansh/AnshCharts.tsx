@@ -85,7 +85,7 @@ export function TopicProgressChart({ topics }: AnshChartsProps) {
                     cursor={{ fill: 'transparent' }}
                     contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: '#f3f4f6' }}
                     labelStyle={{ color: '#f3f4f6' }}
-                    formatter={(value: number) => [`${value}%`, 'Progress']}
+                    formatter={(value: any) => [`${value}%`, 'Progress']}
                 />
                 <Bar dataKey="progress" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20}>
                     {data.map((entry, index) => (
