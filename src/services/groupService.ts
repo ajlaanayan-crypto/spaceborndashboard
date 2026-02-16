@@ -14,6 +14,7 @@ export interface GroupData {
     updatedAt?: any;
     maxMembers?: number;
     lastMessageAt?: any;
+    batch?: string; // "Batch 1", "Batch 2", "Batch 3"
 }
 
 export interface GroupMemberData {
@@ -45,6 +46,7 @@ export const createGroupWithMembers = async (
         memberIds: members.map(m => m.userId), // Ensure memberIds are synced at creation
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        batch: groupData.batch || null,
     });
 
     // 3. Add Members to Batch
@@ -69,6 +71,7 @@ export const createGroup = async (group: Omit<GroupData, 'id' | 'createdAt' | 'u
         ...group,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        batch: group.batch || null,
     });
     return docRef.id;
 };
@@ -165,6 +168,16 @@ export const getUserGroups = async (userId: string): Promise<GroupData[]> => {
     }
 
     return groups;
+};
+
+export const getGroupsByBatch = async (batch: string): Promise<GroupData[]> => {
+    const q = query(
+        collection(db, "groups"),
+        where("batch", "==", batch),
+        orderBy("createdAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as GroupData);
 };
 
 export const removeGroupMember = async (groupId: string, userId: string) => {

@@ -2,17 +2,23 @@
 
 import { GlassCard } from "@/components/ui/GlassCard";
 import { UserAvatar } from "@/components/ui/UserAvatar";
-import { UserPlus, Shield, Loader2, Edit2, Key, ChevronDown, Eye, Trash2, AlertTriangle, PenLine } from "lucide-react";
-import { useState, useEffect } from "react";
+import { UserPlus, Shield, Loader2, Edit2, Key, ChevronDown, Eye, Trash2, AlertTriangle, PenLine, Filter } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { getAllUsers, UserData, updateUserStatus, updateUserName } from "@/services/userService";
+import { getAllUsers, UserData, updateUserStatus, updateUserName, updateUserBatch, addWarning } from "@/services/userService";
+import { getAllGroups, GroupData } from "@/services/groupService";
 import { SessionManager } from "@/components/admin/SessionManager";
 import { auth } from "@/lib/firebase";
+import { Search } from "lucide-react";
 
 export default function UserManagementPage() {
     const router = useRouter();
     const [users, setUsers] = useState<UserData[]>([]);
+    const [groups, setGroups] = useState<GroupData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedRole, setSelectedRole] = useState<string>("all");
+    const [selectedBatch, setSelectedBatch] = useState<string>("all");
     const [showModal, setShowModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
     const [showSessionModal, setShowSessionModal] = useState(false);
@@ -23,10 +29,11 @@ export default function UserManagementPage() {
     const [showRenameModal, setShowRenameModal] = useState(false);
     const [renamingUser, setRenamingUser] = useState<UserData | null>(null);
     const [newName, setNewName] = useState("");
+    const [newBatch, setNewBatch] = useState(""); // For editing batch
     const [updatingName, setUpdatingName] = useState(false);
 
     // Form State
-    const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "intern" });
+    const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "intern", batch: "" });
     const [newRole, setNewRole] = useState("");
     const [creating, setCreating] = useState(false);
     const [updatingRole, setUpdatingRole] = useState(false);
@@ -42,8 +49,12 @@ export default function UserManagementPage() {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const data = await getAllUsers();
-            setUsers(data);
+            const [usersData, groupsData] = await Promise.all([
+                getAllUsers(),
+                getAllGroups()
+            ]);
+            setUsers(usersData);
+            setGroups(groupsData);
         } catch (err) {
             console.error(err);
         } finally {
@@ -78,7 +89,9 @@ export default function UserManagementPage() {
 
             setSuccess("User created successfully!");
             setResetLink(data.passwordResetLink);
-            setNewUser({ name: "", email: "", password: "", role: "intern" });
+            setSuccess("User created successfully!");
+            setResetLink(data.passwordResetLink);
+            setNewUser({ name: "", email: "", password: "", role: "intern", batch: "" });
             fetchUsers();
         } catch (err: any) {
             setError(err.message);
@@ -87,14 +100,23 @@ export default function UserManagementPage() {
         }
     };
 
-    const handleUpdateName = async () => {
-        if (!renamingUser || !newName.trim()) return;
+    const handleUpdateNameAndBatch = async () => {
+        if (!renamingUser) return;
         setUpdatingName(true);
         setError("");
 
         try {
-            await updateUserName(renamingUser.uid, newName.trim());
-            setSuccess("Name updated successfully!");
+            const promises = [];
+            if (newName.trim() && newName !== renamingUser.name) {
+                promises.push(updateUserName(renamingUser.uid, newName.trim()));
+            }
+            if (renamingUser.role === 'intern' && newBatch.trim() !== renamingUser.batch) {
+                promises.push(updateUserBatch(renamingUser.uid, newBatch.trim()));
+            }
+
+            await Promise.all(promises);
+
+            setSuccess("User details updated successfully!");
             setTimeout(() => {
                 setShowRenameModal(false);
                 setSuccess("");
@@ -201,6 +223,44 @@ export default function UserManagementPage() {
         }
     };
 
+    // Derived State for Filters
+    const uniqueBatches = useMemo(() => {
+        const batches = new Set<string>();
+        users.forEach(user => {
+            if (user.role === 'intern' && user.batch) {
+                batches.add(user.batch);
+            }
+        });
+        return Array.from(batches).sort();
+    }, [users]);
+
+    // Filter and Sort Users
+    const filteredUsers = users
+        .filter(user => {
+            const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesRole = selectedRole === 'all' || user.role === selectedRole;
+            const matchesBatch = selectedBatch === 'all' || (user.role === 'intern' && user.batch === selectedBatch);
+
+            return matchesSearch && matchesRole && matchesBatch;
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    const getUserGroups = (uid: string) => {
+        return groups.filter(g => g.memberIds.includes(uid));
+    };
+
+    const handleIssueWarning = async (uid: string, name: string) => {
+        if (!confirm(`Are you sure you want to issue a warning to ${name}? 3 warnings will automatically deactivate the account.`)) return;
+        try {
+            await addWarning(uid);
+            fetchUsers();
+            setSuccess(`Warning issued to ${name}`);
+            setTimeout(() => setSuccess(""), 3000);
+        } catch (error) {
+            alert("Failed to issue warning");
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -215,6 +275,56 @@ export default function UserManagementPage() {
                     <UserPlus className="w-5 h-5" />
                     Add User
                 </button>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Search Bar */}
+                <GlassCard className="p-4 flex items-center gap-4">
+                    <Search className="w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search users..."
+                        className="bg-transparent border-none focus:outline-none text-white w-full"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </GlassCard>
+
+                {/* Role Filter */}
+                <GlassCard className="p-4 flex items-center gap-4">
+                    <Filter className="w-5 h-5 text-gray-400" />
+                    <select
+                        value={selectedRole}
+                        onChange={(e) => {
+                            setSelectedRole(e.target.value);
+                            if (e.target.value !== 'intern') setSelectedBatch('all'); // Reset batch if not intern
+                        }}
+                        className="bg-transparent border-none focus:outline-none text-white w-full cursor-pointer [&>option]:bg-black"
+                    >
+                        <option value="all">All Roles</option>
+                        <option value="admin">Admin</option>
+                        <option value="core_employee">Core Employee</option>
+                        <option value="normal_employee">Normal Employee</option>
+                        <option value="intern">Intern</option>
+                    </select>
+                </GlassCard>
+
+                {/* Batch Filter (Visible only when filtering Interns or All) */}
+                <GlassCard className={`p-4 flex items-center gap-4 ${selectedRole !== 'all' && selectedRole !== 'intern' ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <Filter className="w-5 h-5 text-gray-400" />
+                    <select
+                        value={selectedBatch}
+                        onChange={(e) => setSelectedBatch(e.target.value)}
+                        disabled={selectedRole !== 'all' && selectedRole !== 'intern'}
+                        className="bg-transparent border-none focus:outline-none text-white w-full cursor-pointer [&>option]:bg-black"
+                    >
+                        <option value="all">All Batches</option>
+                        {uniqueBatches.map(batch => (
+                            <option key={batch} value={batch}>{batch}</option>
+                        ))}
+                    </select>
+                </GlassCard>
             </div>
 
             {/* Password Reset Link Display */}
@@ -252,14 +362,16 @@ export default function UserManagementPage() {
                             <tr>
                                 <th className="px-6 py-4">Name</th>
                                 <th className="px-6 py-4">Role</th>
+                                <th className="px-6 py-4">Groups</th>
+                                <th className="px-6 py-4">Warnings</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {loading ? (
-                                <tr><td colSpan={4} className="p-8 text-center text-gray-500">Loading...</td></tr>
-                            ) : users.map((user) => (
+                                <tr><td colSpan={5} className="p-8 text-center text-gray-500">Loading...</td></tr>
+                            ) : filteredUsers.map((user) => (
                                 <tr key={user.uid} className="hover:bg-white/5 transition-colors">
                                     <td className="px-6 py-4">
                                         <div
@@ -274,13 +386,40 @@ export default function UserManagementPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === 'admin' ? 'bg-red-500/10 text-red-400' :
-                                            user.role === 'core_employee' ? 'bg-blue-500/10 text-blue-400' :
-                                                'bg-green-500/10 text-green-400'
-                                            }`}>
-                                            {user.role === 'admin' && <Shield className="w-3 h-3" />}
-                                            {user.role ? user.role.replace("_", " ") : "No Role"}
-                                        </span>
+                                        <div className="flex flex-col gap-1">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium w-fit ${user.role === 'admin' ? 'bg-red-500/10 text-red-400' :
+                                                user.role === 'core_employee' ? 'bg-blue-500/10 text-blue-400' :
+                                                    'bg-green-500/10 text-green-400'
+                                                }`}>
+                                                {user.role === 'admin' && <Shield className="w-3 h-3" />}
+                                                {user.role ? user.role.replace("_", " ") : "No Role"}
+                                            </span>
+                                            {user.role === 'intern' && user.batch && (
+                                                <span className="text-[10px] text-gray-400 px-2">
+                                                    {user.batch}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-wrap gap-1">
+                                            {getUserGroups(user.uid).length > 0 ? (
+                                                getUserGroups(user.uid).map(g => (
+                                                    <span key={g.id} className="text-xs bg-white/10 text-gray-300 px-1.5 py-0.5 rounded border border-white/5">
+                                                        {g.name}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-gray-600 italic">No Groups</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex gap-1 text-red-500">
+                                            {Array.from({ length: user.warnings || 0 }).map((_, i) => (
+                                                <span key={i}>❌</span>
+                                            ))}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 rounded text-xs ${user.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
@@ -294,13 +433,22 @@ export default function UserManagementPage() {
                                                 onClick={() => {
                                                     setRenamingUser(user);
                                                     setNewName(user.name);
+                                                    setNewBatch(user.batch || "");
                                                     setShowRenameModal(true);
                                                 }}
                                                 className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm px-2 py-1 bg-yellow-500/10 rounded flex items-center gap-1"
-                                                title="Rename User"
+                                                title="Edit Details"
                                             >
                                                 <PenLine className="w-3 h-3" />
                                                 Rename
+                                            </button>
+                                            <button
+                                                onClick={() => handleIssueWarning(user.uid, user.name)}
+                                                className="text-orange-400 hover:text-orange-300 transition-colors text-sm px-2 py-1 bg-orange-500/10 rounded flex items-center gap-1"
+                                                title="Issue Warning"
+                                            >
+                                                <AlertTriangle className="w-3 h-3" />
+                                                Warn
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -379,6 +527,22 @@ export default function UserManagementPage() {
                                 />
                             </div>
 
+                            {renamingUser.role === 'intern' && (
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-1">Batch (Interns Only)</label>
+                                    <select
+                                        className="w-full bg-black/40 border border-white/10 rounded p-2 text-white focus:outline-none focus:border-yellow-500 [&>option]:bg-black"
+                                        value={newBatch}
+                                        onChange={(e) => setNewBatch(e.target.value)}
+                                    >
+                                        <option value="">Select Batch</option>
+                                        <option value="Batch 1">Batch 1</option>
+                                        <option value="Batch 2">Batch 2</option>
+                                        <option value="Batch 3">Batch 3</option>
+                                    </select>
+                                </div>
+                            )}
+
                             <div className="flex gap-3 mt-6">
                                 <button
                                     type="button"
@@ -392,7 +556,7 @@ export default function UserManagementPage() {
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={handleUpdateName}
+                                    onClick={handleUpdateNameAndBatch}
                                     disabled={updatingName || !newName.trim()}
                                     className="flex-1 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-500 transition-colors flex items-center justify-center disabled:opacity-50"
                                 >
@@ -437,6 +601,22 @@ export default function UserManagementPage() {
                                     <option value="admin">Admin</option>
                                 </select>
                             </div>
+
+                            {newUser.role === 'intern' && (
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-1">Intern Batch</label>
+                                    <select
+                                        className="w-full bg-black/40 border border-white/10 rounded p-2 text-white focus:outline-none focus:border-blue-500 [&>option]:bg-black"
+                                        value={newUser.batch}
+                                        onChange={(e) => setNewUser({ ...newUser, batch: e.target.value })}
+                                    >
+                                        <option value="">Select Batch</option>
+                                        <option value="Batch 1">Batch 1</option>
+                                        <option value="Batch 2">Batch 2</option>
+                                        <option value="Batch 3">Batch 3</option>
+                                    </select>
+                                </div>
+                            )}
 
                             <div className="flex gap-3 mt-6">
                                 <button

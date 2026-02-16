@@ -1,4 +1,4 @@
-import { collection, getDocs, query, doc, setDoc, updateDoc, where } from "firebase/firestore";
+import { collection, getDocs, query, doc, setDoc, updateDoc, where, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserRole } from "@/context/AuthContext";
 import { compressImage } from "@/lib/imageCompression";
@@ -9,6 +9,8 @@ export interface UserData {
     role: UserRole;
     name: string;
     status: "active" | "inactive";
+    warnings?: number;
+    batch?: string; // Optional batch for interns
     photoURL?: string;
     createdAt: string;
 }
@@ -29,6 +31,27 @@ export const updateUserStatus = async (uid: string, status: "active" | "inactive
 
 export const updateUserName = async (uid: string, name: string) => {
     await updateDoc(doc(db, "users", uid), { name });
+};
+
+export const updateUserBatch = async (uid: string, batch: string) => {
+    await updateDoc(doc(db, "users", uid), { batch });
+};
+
+export const addWarning = async (uid: string) => {
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+        const currentWarnings = userSnap.data().warnings || 0;
+        const newWarnings = currentWarnings + 1;
+        const updates: any = { warnings: newWarnings };
+
+        if (newWarnings >= 3) {
+            updates.status = "inactive";
+        }
+
+        await updateDoc(userRef, updates);
+    }
 };
 
 export const getUsersByRole = async (role: UserRole) => {

@@ -41,6 +41,7 @@ export default function AdminGroupsPage() {
     const [creating, setCreating] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [selectedBatch, setSelectedBatch] = useState<string>("all");
 
     const [formData, setFormData] = useState({
         name: "",
@@ -48,6 +49,7 @@ export default function AdminGroupsPage() {
         leadId: "",
         leadName: "",
         maxMembers: 10,
+        batch: "",
     });
 
     // Weekly Plan & Task State
@@ -93,6 +95,7 @@ export default function AdminGroupsPage() {
                 leadId: group.leadId || "",
                 leadName: group.leadName || "",
                 maxMembers: group.maxMembers || 10,
+                batch: group.batch || "",
             });
         } else {
             setEditingGroup(null);
@@ -102,6 +105,7 @@ export default function AdminGroupsPage() {
                 leadId: "",
                 leadName: "",
                 maxMembers: 10,
+                batch: "",
             });
         }
         setShowModal(true);
@@ -272,7 +276,10 @@ export default function AdminGroupsPage() {
         setShowResourceListModal(true);
     };
 
-    const activeGroups = groups.filter(g => g.status === 'active');
+    const activeGroups = groups
+        .filter(g => g.status === 'active')
+        .filter(g => selectedBatch === 'all' || g.batch === selectedBatch);
+
     const inactiveGroups = groups.filter(g => g.status === 'inactive');
 
     return (
@@ -283,6 +290,16 @@ export default function AdminGroupsPage() {
                     <p className="text-gray-400">Manage teams and assign group leads ({activeGroups.length} active)</p>
                 </div>
                 <div className="flex gap-2">
+                    <select
+                        value={selectedBatch}
+                        onChange={(e) => setSelectedBatch(e.target.value)}
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 text-white focus:outline-none focus:border-blue-500 [&>option]:bg-black"
+                    >
+                        <option value="all">All Batches</option>
+                        <option value="Batch 1">Batch 1</option>
+                        <option value="Batch 2">Batch 2</option>
+                        <option value="Batch 3">Batch 3</option>
+                    </select>
                     <button
                         onClick={async () => {
                             if (!confirm("Initialize database with default groups?")) return;
@@ -443,6 +460,20 @@ export default function AdminGroupsPage() {
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-1">Assign to Batch (Optional)</label>
+                                <select
+                                    className="w-full bg-black/40 border border-white/10 rounded p-2 text-white focus:outline-none focus:border-blue-500 [&>option]:bg-black"
+                                    value={formData.batch}
+                                    onChange={(e) => setFormData({ ...formData, batch: e.target.value })}
+                                >
+                                    <option value="">No Batch Assignment</option>
+                                    <option value="Batch 1">Batch 1</option>
+                                    <option value="Batch 2">Batch 2</option>
+                                    <option value="Batch 3">Batch 3</option>
+                                </select>
                             </div>
 
                             <div>

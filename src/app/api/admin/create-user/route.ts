@@ -25,7 +25,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
         }
 
-        const { email, password, name, role } = await request.json();
+        const { email, password, name, role, batch } = await request.json();
 
         if (!email || !password || !name || !role) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -54,6 +54,7 @@ export async function POST(request: Request) {
             email,
             name,
             role,
+            batch: role === 'intern' ? batch || null : null, // Only store batch for interns
             status: "active",
             createdAt: new Date().toISOString(),
             createdBy: callerUid,
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
             performedBy: callerUid,
             targetId: userRecord.uid,
             targetType: "user",
-            details: { email, name, role },
+            details: { email, name, role, batch },
             timestamp: new Date(),
         });
 
