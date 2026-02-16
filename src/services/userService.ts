@@ -10,6 +10,7 @@ export interface UserData {
     name: string;
     status: "active" | "inactive";
     warnings?: number;
+    lastLogin?: any; // Timestamp
     batch?: string; // Optional batch for interns
     photoURL?: string;
     createdAt: string;

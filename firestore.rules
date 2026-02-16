@@ -213,6 +213,16 @@ service cloud.firestore {
     }
     
     // ==========================================
+    // LOGIN LOGS
+    // ==========================================
+    match /loginLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+    
+    // ==========================================
     // EXPENSES
     // ==========================================
     match /expenses/{expenseId} {

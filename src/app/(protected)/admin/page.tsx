@@ -7,6 +7,7 @@ import { Users, Briefcase, AlertCircle, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getAllUsers, UserData } from "@/services/userService";
 import { SecurityAlerts } from "@/components/admin/SecurityAlerts";
+import { LoginAnalyticsWidget } from "@/components/admin/LoginAnalyticsWidget";
 import { getDashboardStats, getActivityHeatmap, DashboardStats, ActivityData } from "@/services/analyticsService";
 import { ActivityHeatmap } from "@/components/analytics/AnalyticsCharts";
 
@@ -115,9 +116,14 @@ export default function AdminDashboard() {
                     )}
                 </GlassCard>
 
-                <GlassCard>
-                    <SecurityAlerts />
-                </GlassCard>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <GlassCard>
+                        <SecurityAlerts />
+                    </GlassCard>
+                    <GlassCard>
+                        <LoginAnalyticsWidget />
+                    </GlassCard>
+                </div>
             </div>
         </div>
     );

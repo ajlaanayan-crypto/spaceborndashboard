@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { logUserLogin } from "@/services/auditService";
+import { UserData } from "@/services/userService";
 
 export type UserRole = "admin" | "core_employee" | "normal_employee" | "intern" | "guest" | null;
 
@@ -59,6 +61,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     photoURL: userData.photoURL || currentUser.photoURL,
                 };
                 setUser(extendedUser);
+
+                // Log login if new session
+                const sessionKey = `login_logged_${currentUser.uid}`;
+                if (!sessionStorage.getItem(sessionKey)) {
+                    logUserLogin(userData as UserData);
+                    sessionStorage.setItem(sessionKey, "true");
+                }
             } else {
                 console.warn("User document not found in Firestore for UID:", currentUser.uid);
                 setRole("guest");
