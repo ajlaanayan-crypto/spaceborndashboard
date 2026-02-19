@@ -42,7 +42,7 @@ export default function AdminAnshPage() {
         <div className="space-y-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Ansh Progress Tracker</h1>
+                    <h1 className="text-3xl font-bold text-white mb-2">Ansa Progress Tracker</h1>
                     <p className="text-gray-400">MVP Development Status & Team Roadmap</p>
                 </div>
                 <button

@@ -18,7 +18,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Spaceborn",
+  title: "Ansa Tracker",
   description: "Advanced personnel management system.",
 };
 

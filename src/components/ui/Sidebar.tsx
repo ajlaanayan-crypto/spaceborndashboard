@@ -62,7 +62,7 @@ export function Sidebar() {
                     title: "Overview",
                     items: [
                         { href: "/admin", label: "Overview", icon: LayoutDashboard },
-                        { href: "/admin/ansh", label: "Ansh Tracker", icon: Shield },
+                        { href: "/admin/ansh", label: "Ansa Tracker", icon: Shield },
                         { href: "/calendar", label: "Calendar", icon: Calendar },
                     ]
                 },
