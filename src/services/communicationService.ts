@@ -16,9 +16,11 @@ export interface ResourceData {
     id?: string;
     title: string;
     description: string;
-    type: "pdf" | "video" | "link" | "article";
+    type: "pdf" | "video" | "link" | "article" | "youtube" | "playlist" | "instagram" | "other";
     url: string;
-    category?: string; // e.g., "onboarding", "technical", "soft-skills"
+    thumbnailUrl?: string;
+    category?: "Core Docs" | "Tech Stack" | "Department Wise" | "Learning" | "Internal Assets" | "Research Vault" | string;
+    tags?: string[];
     targetRoles?: string[]; // If empty, visible to all
     createdBy: string;
     createdAt?: any;

@@ -23,8 +23,6 @@ import { Loader2, Plus, Edit2, Archive, CheckCircle, Users, Trash2, Calendar, Cl
 import { formatDistanceToNow } from "date-fns";
 import WeeklyPlanModal from "@/components/admin/WeeklyPlanModal";
 import TaskAssignmentModal from "@/components/admin/TaskAssignmentModal";
-import ResourceAssignmentModal from "@/components/admin/ResourceAssignmentModal";
-import ResourceListModal from "@/components/admin/ResourceListModal";
 import { getWeeklyPlan, getCurrentWeekStartDate, WeeklyPlanData } from "@/services/weeklyPlanService";
 
 export default function AdminGroupsPage() {
@@ -57,8 +55,6 @@ export default function AdminGroupsPage() {
     const [selectedMemberForPlan, setSelectedMemberForPlan] = useState<GroupMemberData | null>(null);
     const [currentWeeklyPlan, setCurrentWeeklyPlan] = useState<WeeklyPlanData | null>(null);
     const [showTaskModal, setShowTaskModal] = useState(false);
-    const [showResourceModal, setShowResourceModal] = useState(false);
-    const [showResourceListModal, setShowResourceListModal] = useState(false);
 
     useEffect(() => {
         fetchGroups();
@@ -271,11 +267,6 @@ export default function AdminGroupsPage() {
         }
     };
 
-    const handleManageResources = (group: GroupData) => {
-        setSelectedGroup(group);
-        setShowResourceListModal(true);
-    };
-
     const activeGroups = groups
         .filter(g => g.status === 'active')
         .filter(g => selectedBatch === 'all' || g.batch === selectedBatch);
@@ -381,13 +372,6 @@ export default function AdminGroupsPage() {
                                     >
                                         <Users className="w-4 h-4 inline mr-1" />
                                         Members
-                                    </button>
-                                    <button
-                                        onClick={() => handleManageResources(group)}
-                                        className="flex-1 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-sm transition-colors"
-                                    >
-                                        <LinkIcon className="w-4 h-4 inline mr-1" />
-                                        Resources
                                     </button>
                                     <button
                                         onClick={() => handleArchive(group.id!)}
@@ -643,12 +627,6 @@ export default function AdminGroupsPage() {
                             >
                                 <Plus className="w-4 h-4" /> Assign Task
                             </button>
-                            <button
-                                onClick={() => setShowResourceModal(true)}
-                                className="flex-1 py-2 rounded bg-purple-600 hover:bg-purple-500 text-white transition-colors flex items-center justify-center gap-2"
-                            >
-                                <LinkIcon className="w-4 h-4" /> Share Resource
-                            </button>
                         </div>
                     </GlassCard>
                 </div>
@@ -692,46 +670,6 @@ export default function AdminGroupsPage() {
                     }))} // Map GroupMemberData to UserData
                     onTaskCreated={() => {
                         alert("Task Assigned Successfully");
-                    }}
-                />
-            )}
-
-            {/* Resource List Modal */}
-            {showResourceListModal && selectedGroup && (
-                <ResourceListModal
-                    isOpen={showResourceListModal}
-                    onClose={() => setShowResourceListModal(false)}
-                    group={selectedGroup}
-                    onAddResource={() => {
-                        setShowResourceListModal(false);
-                        // Fetch members if not already loaded (they might be if we came from Members modal but safer to check)
-                        // But Resources are often typically shared from ResourceListModal.
-                        // But ResourceAssignmentModal needs `members` prop.
-                        // So we should fetch members here too.
-                        getGroupMembers(selectedGroup.id!).then(members => {
-                            setGroupMembers(members);
-                            setShowResourceModal(true);
-                        });
-                    }}
-                />
-            )}
-
-            {/* Resource Assignment Modal */}
-            {showResourceModal && selectedGroup && (
-                <ResourceAssignmentModal
-                    isOpen={showResourceModal}
-                    onClose={() => setShowResourceModal(false)}
-                    group={selectedGroup}
-                    members={groupMembers.map(m => ({
-                        uid: m.userId,
-                        name: m.userName,
-                        email: m.userEmail,
-                        role: m.role as UserRole,
-                        status: 'active',
-                        createdAt: new Date().toISOString(),
-                    }))}
-                    onResourceCreated={() => {
-                        alert("Resource Shared Successfully");
                     }}
                 />
             )}

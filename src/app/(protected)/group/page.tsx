@@ -8,7 +8,6 @@ import { getUserGroups, getGroupMembers, GroupData, GroupMemberData } from "@/se
 import { getCurrentWeekPlan, WeeklyPlanData } from "@/services/weeklyPlanService";
 import { getUserMeetings, MeetingData } from "@/services/meetingService";
 import { getGroupTasks, getUserTasks, TaskData } from "@/services/taskService";
-import { getUserResources, ResourceData } from "@/services/resourceService";
 import { getAllUsers, UserData } from "@/services/userService";
 import { Loader2, Users, Calendar, Target, CheckCircle, Briefcase, FileText, Layout, ChevronDown, ChevronUp, Link } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
@@ -26,7 +25,6 @@ export default function GroupDashboardPage() {
     const [selectedGroup, setSelectedGroup] = useState<GroupData | null>(null);
     const [members, setMembers] = useState<GroupMemberData[]>([]);
     const [upcomingMeetings, setUpcomingMeetings] = useState<MeetingData[]>([]);
-    const [resources, setResources] = useState<ResourceData[]>([]);
     const [groupTasks, setGroupTasks] = useState<TaskData[]>([]);
     const [memberWorkloads, setMemberWorkloads] = useState<MemberWorkload[]>([]);
     const [expandedMember, setExpandedMember] = useState<string | null>(null);
@@ -43,19 +41,8 @@ export default function GroupDashboardPage() {
         if (selectedGroup) {
             fetchGroupMembers();
             fetchGroupTasks();
-            fetchResources();
         }
     }, [selectedGroup]);
-
-    const fetchResources = async () => {
-        if (!user?.uid || !selectedGroup?.id) return;
-        try {
-            const res = await getUserResources(user.uid, [selectedGroup.id]);
-            setResources(res);
-        } catch (error) {
-            console.error(error);
-        }
-    };
 
     useEffect(() => {
         if (members.length > 0) {
@@ -291,42 +278,6 @@ export default function GroupDashboardPage() {
                                 )}
                             </GlassCard>
 
-                            {/* Resources */}
-                            <GlassCard className="space-y-4">
-                                <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-                                    <Link className="w-5 h-5 text-blue-400" />
-                                    <h3 className="text-lg font-bold text-white">Resources</h3>
-                                </div>
-                                {resources.length > 0 ? (
-                                    <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                                        {resources.map((resource) => (
-                                            <a
-                                                key={resource.id}
-                                                href={resource.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="block p-3 bg-white/5 rounded hover:bg-white/10 transition-colors group"
-                                            >
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Link className="w-3 h-3 text-blue-400 shrink-0" />
-                                                    <p className="text-sm font-medium text-blue-300 group-hover:text-blue-200 truncate">
-                                                        {resource.title}
-                                                    </p>
-                                                </div>
-                                                <div className="flex justify-between items-center text-[10px] text-gray-500">
-                                                    <div className="flex gap-2">
-                                                        <span className="text-blue-400 bg-blue-400/10 px-1 rounded">{resource.category || 'General'}</span>
-                                                        <span>{resource.targetAudience === 'individuals' ? 'Personal' : 'Group'}</span>
-                                                    </div>
-                                                    <span>{formatDistanceToNow(resource.createdAt?.toDate ? resource.createdAt.toDate() : new Date(), { addSuffix: true })}</span>
-                                                </div>
-                                            </a>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-gray-500 italic text-sm text-center py-4">No resources shared</p>
-                                )}
-                            </GlassCard>
                         </div>
 
                         {/* RIGHT COLUMN: Member Workloads */}
