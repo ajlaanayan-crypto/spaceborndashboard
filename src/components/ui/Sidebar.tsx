@@ -20,7 +20,8 @@ import {
     User,
     BookOpen,
     Menu,
-    X
+    X,
+    ShieldCheck
 } from "lucide-react";
 import Image from "next/image";
 import { auth } from "@/lib/firebase";
@@ -81,7 +82,7 @@ export function Sidebar() {
                 {
                     title: "Work",
                     items: [
-                        { href: "/admin/tasks", label: "All Tasks", icon: ClipboardList },
+                        { href: "/admin/tasks", label: "Mission Hub", icon: ShieldCheck },
                         { href: "/core/tasks", label: "Task Creation", icon: Briefcase },
                         { href: "/admin/meetings", label: "Meetings", icon: ClipboardList },
                     ]
@@ -102,10 +103,11 @@ export function Sidebar() {
         }
 
         if (role === "core_employee") {
-            return [
+            const items = [
                 { href: "/core", label: "Dashboard", icon: LayoutDashboard },
                 { href: "/chat", label: "Team Chat", icon: MessageCircle },
-                { href: "/core/tasks", label: "Task Management", icon: Briefcase },
+                { href: "/core", label: "Mission Hub (Global)", icon: ShieldCheck },
+                { href: "/core/tasks", label: "Task Creation", icon: Briefcase },
                 { href: "/core/weekly", label: "Weekly Planning", icon: ClipboardList },
                 { href: "/calendar", label: "Calendar", icon: Calendar },
                 { href: "/group", label: "My Group", icon: Users },
@@ -113,10 +115,16 @@ export function Sidebar() {
                 { href: "/resources", label: "Resources Hub", icon: BookOpen },
                 { href: "/employee/tasks", label: "Employee Tasks", icon: ClipboardList },
             ];
+            // If they are specifically a lead of a group, Mission Hub (Global) covers global, 
+            // but we can point them to /group for local oversight if they prefer.
+            // For Core, they usually oversee multiple teams, so we'll keep it streamlined.
+            return items;
         }
 
+        const isLead = userGroups && userGroups.some(g => g.leadId === user?.uid);
+
         if (role === "normal_employee") {
-            return [
+            const items = [
                 { href: "/employee", label: "My Workspace", icon: LayoutDashboard },
                 { href: "/chat", label: "Team Chat", icon: MessageCircle },
                 { href: "/employee/tasks", label: "My Tasks", icon: ClipboardList },
@@ -124,10 +132,14 @@ export function Sidebar() {
                 { href: "/group", label: "My Group", icon: Users },
                 { href: "/resources", label: "Resources Hub", icon: BookOpen },
             ];
+            if (isLead) {
+                items.splice(2, 0, { href: "/group", label: "Mission Hub", icon: ShieldCheck });
+            }
+            return items;
         }
 
         if (role === "intern") {
-            return [
+            const items = [
                 { href: "/intern", label: "Dashboard", icon: LayoutDashboard },
                 { href: "/chat", label: "Team Chat", icon: MessageCircle },
                 { href: "/group", label: "My Group", icon: Users },
@@ -136,6 +148,10 @@ export function Sidebar() {
                 { href: "/intern/performance", label: "Performance", icon: Shield },
                 { href: "/resources", label: "Resources Hub", icon: BookOpen },
             ];
+            if (isLead) {
+                items.splice(2, 0, { href: "/group", label: "Mission Hub", icon: ShieldCheck });
+            }
+            return items;
         }
 
         return [];
@@ -208,7 +224,7 @@ export function Sidebar() {
                                                 const isActive = pathname === link.href;
                                                 return (
                                                     <Link
-                                                        key={link.href}
+                                                        key={`${link.href}-${link.label}`}
                                                         href={link.href}
                                                         onClick={() => isMobile && setIsMobileMenuOpen(false)}
                                                         className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap mb-1 ${isActive ? "bg-white/10 text-white border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.1)]" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
@@ -229,7 +245,7 @@ export function Sidebar() {
                                                     const isActive = pathname === link.href;
                                                     return (
                                                         <Link
-                                                            key={link.href}
+                                                            key={`${link.href}-${link.label}-icon`}
                                                             href={link.href}
                                                             className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap mb-1 ${isActive ? "bg-white/10 text-white border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.1)]" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}
                                                         >
@@ -248,7 +264,7 @@ export function Sidebar() {
                             const isActive = pathname === item.href;
                             return (
                                 <Link
-                                    key={item.href}
+                                    key={`${item.href}-${item.label}`}
                                     href={item.href}
                                     onClick={() => isMobile && setIsMobileMenuOpen(false)}
                                     className={`flex items-center gap-4 px-3 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap mb-1 ${isActive ? "bg-white/10 text-white border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.1)]" : "text-gray-400 hover:bg-white/5 hover:text-white"}`}

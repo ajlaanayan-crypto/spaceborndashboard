@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, serverTimestamp, orderBy, Timestamp, writeBatch } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc, serverTimestamp, orderBy, Timestamp, writeBatch, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface GroupData {
@@ -80,6 +80,16 @@ export const getAllGroups = async (): Promise<GroupData[]> => {
     const q = query(collection(db, "groups"), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as GroupData);
+};
+
+export const subscribeToGroups = (callback: (groups: GroupData[]) => void) => {
+    const q = query(collection(db, "groups"), orderBy("createdAt", "desc"));
+    return onSnapshot(q, (snapshot) => {
+        const groups = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as GroupData);
+        callback(groups);
+    }, (error) => {
+        console.error("Error subscribing to groups:", error);
+    });
 };
 
 export const getActiveGroups = async (): Promise<GroupData[]> => {

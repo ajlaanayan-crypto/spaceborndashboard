@@ -8,7 +8,8 @@ import {
     query,
     where,
     serverTimestamp,
-    orderBy
+    orderBy,
+    onSnapshot
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { createNotification, sendBulkNotifications } from "./notificationService";
@@ -41,6 +42,10 @@ export interface TaskData {
     blockers?: string[];
     createdAt?: any;
     completedAt?: any;
+    submittedAt?: any;       // When user submits for review
+    verifiedBy?: string;     // UID of verifying Group Lead
+    verifiedByName?: string; // Display name of verifying Group Lead
+    verifiedAt?: any;        // When Group Lead verified
 }
 
 export const createTask = async (task: Omit<TaskData, 'id' | 'createdAt'>) => {
@@ -95,13 +100,36 @@ export const createTask = async (task: Omit<TaskData, 'id' | 'createdAt'>) => {
 export const updateTaskStatus = async (taskId: string, status: TaskData['status']) => {
     try {
         const taskRef = doc(db, "tasks", taskId);
-        await updateDoc(taskRef, {
+        const updates: any = {
             status,
-            updatedAt: serverTimestamp(), // Add updatedAt
-            // completedAt: status === 'completed' ? serverTimestamp() : null // Removed completedAt
-        });
+            updatedAt: serverTimestamp(),
+        };
+        // Record when user submits for review
+        if (status === 'review') {
+            updates.submittedAt = serverTimestamp();
+        }
+        await updateDoc(taskRef, updates);
     } catch (error) {
         console.error("Error updating task:", error);
+        throw error;
+    }
+};
+
+/**
+ * Called by a Group Lead / Core Employee to officially verify and complete a task.
+ */
+export const verifyTask = async (taskId: string, verifiedByUid: string, verifiedByName: string) => {
+    try {
+        const taskRef = doc(db, "tasks", taskId);
+        await updateDoc(taskRef, {
+            status: 'completed',
+            verifiedBy: verifiedByUid,
+            verifiedByName: verifiedByName,
+            verifiedAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+    } catch (error) {
+        console.error("Error verifying task:", error);
         throw error;
     }
 };
@@ -217,6 +245,56 @@ export const getAllTasks = async () => {
         console.error("Error fetching all tasks:", error);
         throw error;
     }
+};
+
+/**
+ * Real-time subscription for all tasks
+ */
+export const subscribeToAllTasks = (callback: (tasks: TaskData[]) => void) => {
+    const q = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
+    return onSnapshot(q, (snapshot) => {
+        const tasks = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as TaskData[];
+        callback(tasks);
+    }, (error) => {
+        console.error("Error subscribing to all tasks:", error);
+    });
+};
+
+/**
+ * Real-time subscription for tasks assigned to a user or their groups
+ */
+export const subscribeToUserTasks = (userId: string, groupIds: string[] = [], callback: (tasks: TaskData[]) => void) => {
+    // Note: Firestore doesn't support 'OR' queries across different fields easily without complex patterns.
+    // For simplicity and real-time, we'll listen to the whole collection if the user is a lead/admin, 
+    // or filtering locally if bandwidth is an issue.
+    // But better: we can create multiple listeners if needed.
+
+    // For now, let's use a simpler approach of listening to all relevant tasks if possible.
+    const q = query(
+        collection(db, "tasks"),
+        orderBy("createdAt", "desc")
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const allTasks = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as TaskData[];
+
+        // Filter locally for real-time responsiveness
+        const filteredTasks = allTasks.filter(task =>
+            task.assignedTo === userId ||
+            (task.groupId && groupIds.includes(task.groupId)) ||
+            task.assignedBy === userId
+        );
+
+        callback(filteredTasks);
+    }, (error) => {
+        console.error("Error subscribing to user tasks:", error);
+    });
 };
 
 export const deleteTask = async (taskId: string) => {

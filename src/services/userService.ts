@@ -1,4 +1,4 @@
-import { collection, getDocs, query, doc, setDoc, updateDoc, where, getDoc } from "firebase/firestore";
+import { collection, getDocs, query, doc, setDoc, updateDoc, where, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UserRole } from "@/context/AuthContext";
 import { compressImage } from "@/lib/imageCompression";
@@ -20,6 +20,16 @@ export const getAllUsers = async () => {
     const q = query(collection(db, "users"));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserData));
+};
+
+export const subscribeToUsers = (callback: (users: UserData[]) => void) => {
+    const q = query(collection(db, "users"));
+    return onSnapshot(q, (snapshot) => {
+        const users = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserData));
+        callback(users);
+    }, (error) => {
+        console.error("Error subscribing to users:", error);
+    });
 };
 
 export const createUserInFirestore = async (uid: string, data: Omit<UserData, "uid">) => {

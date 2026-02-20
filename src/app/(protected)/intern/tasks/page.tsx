@@ -1,7 +1,7 @@
 "use client";
 
 import { GlassCard } from "@/components/ui/GlassCard";
-import { CheckCircle, Clock } from "lucide-react";
+import { CheckCircle, Clock, SendHorizontal, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getUserTasks, updateTaskStatus, TaskData } from "@/services/taskService";
 import { useAuth } from "@/context/AuthContext";
@@ -17,14 +17,9 @@ export default function InternTasksPage() {
         if (user) {
             setLoading(true);
             try {
-                // 1. Get user groups
                 const groups = await getUserGroups(user.uid);
                 const groupIds = groups.map(g => g.id).filter(id => !!id) as string[];
-
-                // 2. Get tasks (both individual and group)
-                // Filter by activeGroupId if present
                 const targetGroups = activeGroupId ? [activeGroupId] : groupIds;
-
                 const userTasks = await getUserTasks(user.uid, targetGroups);
                 setTasks(userTasks);
             } catch (error) {
@@ -42,6 +37,29 @@ export default function InternTasksPage() {
     const handleStatusChange = async (taskId: string, newStatus: TaskData["status"]) => {
         await updateTaskStatus(taskId, newStatus);
         refreshTasks();
+    };
+
+    const getStatusBadge = (task: TaskData) => {
+        if (task.status === 'completed') {
+            return (
+                <span className="flex items-center gap-1.5 text-xs text-green-400 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    {task.verifiedByName ? `Verified by ${task.verifiedByName}` : 'Completed'}
+                </span>
+            );
+        }
+        if (task.status === 'review') {
+            return (
+                <span className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full animate-pulse">
+                    <Clock className="w-3.5 h-3.5" />
+                    Submitted — Pending Group Lead Verification
+                </span>
+            );
+        }
+        if (task.status === 'in_progress') {
+            return <span className="text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">In Progress</span>;
+        }
+        return <span className="text-xs text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full capitalize">{(task.status || 'pending').replace('_', ' ')}</span>;
     };
 
     return (
@@ -65,7 +83,7 @@ export default function InternTasksPage() {
                                     </h4>
                                     <p className="text-gray-400 text-sm mt-1">{task.description}</p>
                                 </div>
-                                <div className="flex flex-col items-end gap-2">
+                                <div className="flex flex-col items-end gap-2 shrink-0 ml-4">
                                     <span className={`px-2 py-1 rounded text-xs capitalize ${task.priority === 'high' ? 'bg-red-500/20 text-red-400' :
                                         task.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                                             'bg-blue-500/20 text-blue-400'
@@ -78,30 +96,34 @@ export default function InternTasksPage() {
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 mt-4 pt-4 border-t border-white/5">
-                                <span className="text-xs text-gray-500 uppercase tracking-wider py-1.5">Status: {(task.status || 'pending').replace("_", " ")}</span>
-                                <div className="flex-1"></div>
-                                {task.status !== 'completed' && (
-                                    <div className="flex gap-2">
-                                        {task.status === 'pending' && (
-                                            <button
-                                                onClick={() => handleStatusChange(task.id!, 'in_progress')}
-                                                className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors"
-                                            >
-                                                Start Mission
-                                            </button>
-                                        )}
-                                        {task.status === 'in_progress' && (
-                                            <button
-                                                onClick={() => handleStatusChange(task.id!, 'review')}
-                                                className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded transition-colors"
-                                            >
-                                                Submit for Review
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
+                            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/5 items-center justify-between">
+                                {getStatusBadge(task)}
+
+                                <div className="flex gap-2 ml-auto flex-wrap">
+                                    {(task.status || 'pending') === 'pending' && (
+                                        <button
+                                            onClick={() => handleStatusChange(task.id!, 'in_progress')}
+                                            className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors"
+                                        >
+                                            Start Mission
+                                        </button>
+                                    )}
+                                    {((task.status || 'pending') === 'pending' || task.status === 'in_progress') && (
+                                        <button
+                                            onClick={() => handleStatusChange(task.id!, 'review')}
+                                            className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1.5"
+                                        >
+                                            <SendHorizontal className="w-3.5 h-3.5" />
+                                            Submit to Group Lead
+                                        </button>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* Document submission notice */}
+                            {task.status === 'review' && (
+                                <p className="mt-2 text-[11px] text-amber-500/70 italic">📄 Task has been submitted to your Group Lead. It will be marked complete only after their verification.</p>
+                            )}
                         </div>
                     ))}
                 </div>
