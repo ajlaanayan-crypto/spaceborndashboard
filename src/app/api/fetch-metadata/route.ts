@@ -16,6 +16,26 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
         }
 
+        // Check if it's a YouTube URL to use OEmbed (more reliable)
+        const isYouTube = urlToFetch.includes('youtube.com') || urlToFetch.includes('youtu.be');
+
+        if (isYouTube) {
+            try {
+                const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(urlToFetch)}&format=json`;
+                const ytRes = await fetch(oembedUrl);
+                if (ytRes.ok) {
+                    const ytData = await ytRes.json();
+                    return NextResponse.json({
+                        title: ytData.title || '',
+                        description: ytData.author_name ? `Video by ${ytData.author_name}` : '',
+                        thumbnailUrl: ytData.thumbnail_url || ''
+                    });
+                }
+            } catch (ytErr) {
+                console.error("YouTube OEmbed Error, falling back to scraping:", ytErr);
+            }
+        }
+
         const response = await fetch(urlToFetch, {
             headers: {
                 // Imitate a standard browser to avoid basic bot-blocks
