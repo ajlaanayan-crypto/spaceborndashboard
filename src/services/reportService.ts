@@ -1,6 +1,49 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { TaskData } from './taskService';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+// ─── Legacy types consumed by admin/users/[userId]/page.tsx ──────────────────
+export interface ReportData {
+    id: string;
+    userId: string;
+    period: string;
+    performanceScore: number;
+    tasksCompleted: number;
+    tasksAssigned: number;
+    remarks?: string;
+}
+
+export interface FeedbackData {
+    id: string;
+    userId: string;
+    message: string;
+    type: 'praise' | 'improvement' | 'general';
+    createdByName?: string;
+    createdAt?: any;
+}
+
+export const getReportsByUser = async (userId: string): Promise<ReportData[]> => {
+    try {
+        const q = query(collection(db, 'reports'), where('userId', '==', userId));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as ReportData));
+    } catch {
+        return [];
+    }
+};
+
+export const getFeedbackForUser = async (userId: string): Promise<FeedbackData[]> => {
+    try {
+        const q = query(collection(db, 'feedback'), where('userId', '==', userId));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as FeedbackData));
+    } catch {
+        return [];
+    }
+};
+
 
 // ─── Logo Loader ──────────────────────────────────────────────────────────────
 const loadLogoDataUrl = (): Promise<string | null> =>
