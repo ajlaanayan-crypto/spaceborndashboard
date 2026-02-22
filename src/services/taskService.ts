@@ -46,6 +46,7 @@ export interface TaskData {
     verifiedBy?: string;     // UID of verifying Group Lead
     verifiedByName?: string; // Display name of verifying Group Lead
     verifiedAt?: any;        // When Group Lead verified
+    submittedAt?: any;       // When task was submitted for review
     ansaTopicId?: string;    // Reference to synchronized Ansa Topic
 }
 
