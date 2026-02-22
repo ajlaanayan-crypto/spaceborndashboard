@@ -1,16 +1,17 @@
 "use client";
 
 import { GlassCard } from "@/components/ui/GlassCard";
-import { CheckCircle, Clock, User, MessageSquare, Plus, Pencil, Trash2, X, ShieldCheck, SendHorizontal, AlertCircle, Target } from "lucide-react";
+import { CheckCircle, Clock, User, MessageSquare, Plus, Pencil, Trash2, X, ShieldCheck, SendHorizontal, AlertCircle, Target, Archive, History, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getAllTasks, TaskData, createTask, deleteTask, updateTask, updateTaskStatus, subscribeToAllTasks, verifyTask } from "@/services/taskService";
+import { getAllTasks, TaskData, createTask, deleteTask, updateTask, updateTaskStatus, subscribeToAllTasks, verifyTask, autoSubmitExpiredTasks } from "@/services/taskService";
 import { CommentSection } from "@/components/tasks/CommentSection";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { useAuth } from "@/context/AuthContext";
 import { UserData, getAllUsers, subscribeToUsers } from "@/services/userService";
 import { GroupData, getAllGroups, subscribeToGroups } from "@/services/groupService";
 import { TaskDistributionStats } from "@/components/admin/TaskDistributionStats";
-import { LayoutDashboard, ListTodo } from "lucide-react";
+import { LayoutDashboard, ListTodo, Download, History as HistoryIcon } from "lucide-react";
+import { createTopic } from "@/services/ansaService";
 
 export default function AdminTasksPage() {
     const { user } = useAuth();
@@ -19,7 +20,7 @@ export default function AdminTasksPage() {
     const [selectedTaskForComments, setSelectedTaskForComments] = useState<TaskData | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingTask, setEditingTask] = useState<TaskData | null>(null);
-    const [viewMode, setViewMode] = useState<'list' | 'distribution' | 'oversight'>('list');
+    const [viewMode, setViewMode] = useState<'list' | 'distribution' | 'oversight' | 'archive'>('list');
     const [users, setUsers] = useState<UserData[]>([]);
     const [groups, setGroups] = useState<GroupData[]>([]);
 
@@ -36,6 +37,7 @@ export default function AdminTasksPage() {
         const unsubscribeTasks = subscribeToAllTasks((data) => {
             setTasks(data);
             setLoading(false);
+            autoSubmitExpiredTasks(data);
         });
 
         // Subscribe to Users
@@ -94,18 +96,59 @@ export default function AdminTasksPage() {
         }
     };
 
-    const handleVerify = async (taskId: string) => {
+    const handleVerify = async (taskId: string, ansaTopicId?: string) => {
         if (!user) return;
         setVerifying(taskId);
         try {
             const adminName = user.displayName || user.email?.split('@')[0] || 'Administrator';
-            await verifyTask(taskId, user.uid, adminName);
+            await verifyTask(taskId, user.uid, adminName, ansaTopicId);
         } catch (error) {
             console.error("Verification failed", error);
             alert("Failed to verify mission");
         } finally {
             setVerifying(null);
         }
+    };
+
+    // --- Archive Grouping Helpers ---
+    const getWeekRange = (dateString: string) => {
+        const d = new Date(dateString);
+        const day = d.getDay(); // 0 (Sun) to 6 (Sat)
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
+        const monday = new Date(d);
+        monday.setDate(diff);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+
+        const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+        return `${monday.toLocaleDateString(undefined, options)} - ${sunday.toLocaleDateString(undefined, options)}, ${monday.getFullYear()}`;
+    };
+
+    const getWeekSortKey = (dateString: string) => {
+        const d = new Date(dateString);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d);
+        monday.setDate(diff);
+        monday.setHours(0, 0, 0, 0);
+        return monday.getTime();
+    };
+
+    const groupTasksByWeek = (tasksToGroup: TaskData[]) => {
+        const groups: { [key: string]: { label: string; sortKey: number; tasks: TaskData[] } } = {};
+
+        tasksToGroup.forEach(task => {
+            if (!task.deadline) return;
+            const label = getWeekRange(task.deadline);
+            const sortKey = getWeekSortKey(task.deadline);
+
+            if (!groups[label]) {
+                groups[label] = { label, sortKey, tasks: [] };
+            }
+            groups[label].tasks.push(task);
+        });
+
+        return Object.values(groups).sort((a, b) => b.sortKey - a.sortKey);
     };
 
     return (
@@ -115,13 +158,59 @@ export default function AdminTasksPage() {
                     <h1 className="text-3xl font-bold text-white mb-2">Global Task Overwatch</h1>
                     <p className="text-gray-400">Monitoring all active missions across the organization.</p>
                 </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
-                >
-                    <Plus className="w-5 h-5" />
-                    Create Mission
-                </button>
+                <div className="flex gap-4">
+
+                    <button
+                        onClick={async () => {
+                            if (!confirm("Sync all missions with Ansa Tracker? This will ensure full historical tracking.")) return;
+                            setLoading(true);
+                            let syncedCount = 0;
+                            let createdCount = 0;
+
+                            for (const t of tasks) {
+                                if (!t.id) continue;
+                                try {
+                                    if (t.ansaTopicId) {
+                                        // Update existing
+                                        await updateTask(t.id, { title: t.title, description: t.description, ansaTopicId: t.ansaTopicId });
+                                        syncedCount++;
+                                    } else {
+                                        // Create missing
+                                        const topic = await createTopic({
+                                            title: t.title,
+                                            description: t.description,
+                                            assignedGroupIds: t.groupId ? [t.groupId] : [],
+                                            assignedGroupNames: t.groupName ? [t.groupName] : [],
+                                            status: t.status === 'completed' ? 'completed' :
+                                                t.status === 'pending' ? 'pending' : 'in_progress'
+                                        });
+                                        if (topic.id) {
+                                            await updateTask(t.id, { ansaTopicId: topic.id });
+                                            createdCount++;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error("Sync failed for", t.id, e);
+                                }
+                            }
+                            setLoading(false);
+                            alert(`Sync complete.\nUpdated: ${syncedCount}\nCreated new topics: ${createdCount}`);
+                        }}
+                        className="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg flex items-center gap-2 border border-white/10 transition-all font-medium"
+                        title="Force Sync with Ansa Tracker"
+                        disabled={loading}
+                    >
+                        <HistoryIcon className={`w-5 h-5 text-amber-400 ${loading ? 'animate-spin' : ''}`} />
+                        {loading ? 'Syncing...' : 'Force Sync'}
+                    </button>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-blue-900/20 transition-all"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Create Mission
+                    </button>
+                </div>
             </div>
 
             {/* View Toggle */}
@@ -147,10 +236,99 @@ export default function AdminTasksPage() {
                     <ShieldCheck className="w-4 h-4" />
                     Oversight Hub
                 </button>
+                <button
+                    onClick={() => setViewMode('archive')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm transition-all ${viewMode === 'archive' ? 'bg-amber-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <Archive className="w-4 h-4" />
+                    Past Missions
+                </button>
             </div>
 
             {viewMode === 'distribution' ? (
                 <TaskDistributionStats users={users} tasks={tasks} groups={groups} />
+            ) : viewMode === 'archive' ? (
+                <GlassCard>
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-amber-500/20 rounded-lg text-amber-400">
+                            <History className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-white">Mission Archive</h3>
+                            <p className="text-xs text-gray-400">Reviewing objectives that have passed their operational deadline.</p>
+                        </div>
+                    </div>
+                    <div className="space-y-8">
+                        {(() => {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+
+                            const archivedTasks = tasks.filter(t => {
+                                if (!t.deadline) return false;
+                                return new Date(t.deadline) < today;
+                            });
+
+                            if (archivedTasks.length === 0) {
+                                return <p className="text-gray-500 italic">No archived missions found.</p>;
+                            }
+
+                            const weeklyGroups = groupTasksByWeek(archivedTasks);
+
+                            return weeklyGroups.map(group => (
+                                <div key={group.label} className="space-y-4">
+                                    <h4 className="text-sm font-bold text-amber-500/80 uppercase tracking-widest flex items-center gap-2 border-b border-white/5 pb-2">
+                                        <Calendar className="w-4 h-4" />
+                                        Week: {group.label}
+                                    </h4>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {group.tasks.map(task => (
+                                            <div key={task.id} className="p-4 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group relative">
+                                                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => setEditingTask(task)}
+                                                        className="p-1.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded"
+                                                        title="Edit Mission"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(task.id!)}
+                                                        className="p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded"
+                                                        title="Delete Mission"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                <div className="flex justify-between items-start mb-2 pr-20">
+                                                    <div>
+                                                        <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                                                            {task.title}
+                                                            <span className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30">EXPIRED</span>
+                                                            {task.status === 'completed' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                                        </h4>
+                                                        <p className="text-gray-400 text-sm mt-1">{task.description}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <span className="text-xs text-red-400 flex items-center gap-1 font-bold">
+                                                            <Clock className="w-3 h-3" /> Overdue: {task.deadline}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-500">Subject: {task.assignedToName || task.groupName}</span>
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${task.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                                                            task.status === 'review' ? 'bg-amber-500/20 text-amber-400' :
+                                                                task.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'
+                                                            }`}>
+                                                            {task.status.toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ));
+                        })()}
+                    </div>
+                </GlassCard>
             ) : viewMode === 'oversight' ? (
                 <div className="space-y-8">
                     {/* 1. Deployment Map */}
@@ -286,7 +464,7 @@ export default function AdminTasksPage() {
                                                         </div>
                                                         {t.status === 'review' && (
                                                             <button
-                                                                onClick={() => handleVerify(t.id!)}
+                                                                onClick={() => handleVerify(t.id!, t.ansaTopicId)}
                                                                 disabled={verifying === t.id}
                                                                 className="text-[10px] bg-green-600 hover:bg-green-500 text-white px-2 py-1 rounded transition-colors font-bold disabled:opacity-50"
                                                             >
@@ -341,9 +519,21 @@ export default function AdminTasksPage() {
             ) : (
                 <GlassCard>
                     <div className="space-y-4">
-                        {loading ? <p className="text-gray-500">Scanning tasks...</p> : tasks.length === 0 ? (
-                            <p className="text-gray-500 italic">No tasks found in the system.</p>
-                        ) : tasks.map(task => (
+                        {loading ? <p className="text-gray-500">Scanning tasks...</p> : tasks.filter(t => {
+                            if (!t.deadline) return true;
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const deadlineDate = new Date(t.deadline);
+                            return deadlineDate >= today || t.status === 'completed';
+                        }).length === 0 ? (
+                            <p className="text-gray-500 italic">No active missions found in the system.</p>
+                        ) : tasks.filter(t => {
+                            if (!t.deadline) return true;
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const deadlineDate = new Date(t.deadline);
+                            return deadlineDate >= today;
+                        }).map(task => (
                             <div key={task.id} className="p-4 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group relative">
                                 {/* Action Buttons */}
                                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

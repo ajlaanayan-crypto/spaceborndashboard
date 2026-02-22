@@ -1,16 +1,16 @@
-import { AnshTopic, AnshSubtopic, createSubtopic, getSubtopics, toggleSubtopicStatus, deleteSubtopic, deleteTopic } from "@/services/anshService";
+import { AnsaTopic, AnsaSubtopic, createSubtopic, getSubtopics, toggleSubtopicStatus, deleteSubtopic, deleteTopic } from "@/services/ansaService";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { ChevronDown, ChevronUp, CheckCircle, Circle, Plus, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface TopicCardProps {
-    topic: AnshTopic;
+    topic: AnsaTopic;
     onUpdate: () => void;
 }
 
 export function TopicCard({ topic, onUpdate }: TopicCardProps) {
     const [expanded, setExpanded] = useState(false);
-    const [subtopics, setSubtopics] = useState<AnshSubtopic[]>([]);
+    const [subtopics, setSubtopics] = useState<AnsaSubtopic[]>([]);
     const [newSubtopicTitle, setNewSubtopicTitle] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -37,7 +37,7 @@ export function TopicCard({ topic, onUpdate }: TopicCardProps) {
         setLoading(false);
     };
 
-    const handleToggleStatus = async (subtopic: AnshSubtopic) => {
+    const handleToggleStatus = async (subtopic: AnsaSubtopic) => {
         await toggleSubtopicStatus(subtopic.id!, subtopic.status, topic.id!);
         await fetchSubtopics();
         onUpdate();
@@ -56,7 +56,7 @@ export function TopicCard({ topic, onUpdate }: TopicCardProps) {
         onUpdate();
     };
 
-    const getStatusColor = (status: AnshTopic['status']) => {
+    const getStatusColor = (status: AnsaTopic['status']) => {
         switch (status) {
             case 'completed': return 'bg-green-500';
             case 'in_progress': return 'bg-blue-500';

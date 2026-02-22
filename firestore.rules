@@ -94,15 +94,15 @@ service cloud.firestore {
     }
     
     // ==========================================
-    // ANSH TRACKER (Topics & Subtopics)
+    // ANSA TRACKER (Topics & Subtopics)
     // ==========================================
-    match /ansh_topics/{topicId} {
+    match /ansa_topics/{topicId} {
       allow read: if isAuthenticated();
       allow create, update: if isAuthenticated(); // Admins primarily, but permissive for now
       allow delete: if isAdmin();
     }
 
-    match /ansh_subtopics/{subtopicId} {
+    match /ansa_subtopics/{subtopicId} {
         allow read: if isAuthenticated();
         allow create, update: if isAuthenticated();
         allow delete: if isAdmin(); // Or creator?

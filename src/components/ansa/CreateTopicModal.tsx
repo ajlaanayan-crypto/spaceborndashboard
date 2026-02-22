@@ -1,4 +1,4 @@
-import { createTopic } from "@/services/anshService";
+import { createTopic } from "@/services/ansaService";
 import { GroupData, getAllGroups } from "@/services/groupService";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { X, Loader2 } from "lucide-react";
@@ -109,8 +109,8 @@ export function CreateTopicModal({ onClose, onCreated }: CreateTopicModalProps) 
                                         type="button"
                                         onClick={() => toggleGroup(group.id!)}
                                         className={`px-3 py-1 text-sm rounded border transition-colors ${selectedGroups.includes(group.id!)
-                                                ? 'bg-blue-600 border-blue-500 text-white'
-                                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+                                            ? 'bg-blue-600 border-blue-500 text-white'
+                                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
                                             }`}
                                     >
                                         {group.name}

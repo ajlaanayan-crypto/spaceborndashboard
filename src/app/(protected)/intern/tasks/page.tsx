@@ -3,7 +3,7 @@
 import { GlassCard } from "@/components/ui/GlassCard";
 import { CheckCircle, Clock, SendHorizontal, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getUserTasks, updateTaskStatus, TaskData } from "@/services/taskService";
+import { getUserTasks, updateTaskStatus, TaskData, autoSubmitExpiredTasks } from "@/services/taskService";
 import { useAuth } from "@/context/AuthContext";
 import { getUserGroups } from "@/services/groupService";
 
@@ -21,7 +21,19 @@ export default function InternTasksPage() {
                 const groupIds = groups.map(g => g.id).filter(id => !!id) as string[];
                 const targetGroups = activeGroupId ? [activeGroupId] : groupIds;
                 const userTasks = await getUserTasks(user.uid, targetGroups);
-                setTasks(userTasks);
+
+                // Filter out expired tasks (deadline < today)
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const activeTasks = userTasks.filter(task => {
+                    if (!task.deadline) return true;
+                    const deadlineDate = new Date(task.deadline);
+                    return deadlineDate >= today;
+                });
+
+                setTasks(activeTasks);
+                autoSubmitExpiredTasks(activeTasks);
             } catch (error) {
                 console.error("Error refreshing tasks:", error);
             } finally {
@@ -34,8 +46,8 @@ export default function InternTasksPage() {
         if (user) refreshTasks();
     }, [user, activeGroupId]);
 
-    const handleStatusChange = async (taskId: string, newStatus: TaskData["status"]) => {
-        await updateTaskStatus(taskId, newStatus);
+    const handleStatusChange = async (taskId: string, newStatus: TaskData["status"], ansaTopicId?: string) => {
+        await updateTaskStatus(taskId, newStatus, ansaTopicId);
         refreshTasks();
     };
 
@@ -102,7 +114,7 @@ export default function InternTasksPage() {
                                 <div className="flex gap-2 ml-auto flex-wrap">
                                     {(task.status || 'pending') === 'pending' && (
                                         <button
-                                            onClick={() => handleStatusChange(task.id!, 'in_progress')}
+                                            onClick={() => handleStatusChange(task.id!, 'in_progress', task.ansaTopicId)}
                                             className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors"
                                         >
                                             Start Mission
@@ -110,7 +122,7 @@ export default function InternTasksPage() {
                                     )}
                                     {((task.status || 'pending') === 'pending' || task.status === 'in_progress') && (
                                         <button
-                                            onClick={() => handleStatusChange(task.id!, 'review')}
+                                            onClick={() => handleStatusChange(task.id!, 'review', task.ansaTopicId)}
                                             className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded transition-colors flex items-center gap-1.5"
                                         >
                                             <SendHorizontal className="w-3.5 h-3.5" />

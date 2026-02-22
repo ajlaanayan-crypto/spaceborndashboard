@@ -18,8 +18,8 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Ansa Tracker",
-  description: "Advanced personnel management system.",
+  title: "Spaceborn",
+  description: "Advanced Spaceborn Personnel Management System",
 };
 
 import { GlobalClickSound } from "@/components/ui/GlobalClickSound";

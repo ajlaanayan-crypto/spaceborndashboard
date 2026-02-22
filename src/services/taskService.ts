@@ -14,6 +14,7 @@ import {
 import { db } from "@/lib/firebase";
 import { createNotification, sendBulkNotifications } from "./notificationService";
 import { getGroupMembers } from "./groupService";
+import { createTopic, updateTopic } from "./ansaService";
 
 export interface Subtask {
     id: string;
@@ -42,18 +43,34 @@ export interface TaskData {
     blockers?: string[];
     createdAt?: any;
     completedAt?: any;
-    submittedAt?: any;       // When user submits for review
     verifiedBy?: string;     // UID of verifying Group Lead
     verifiedByName?: string; // Display name of verifying Group Lead
     verifiedAt?: any;        // When Group Lead verified
+    ansaTopicId?: string;    // Reference to synchronized Ansa Topic
 }
 
 export const createTask = async (task: Omit<TaskData, 'id' | 'createdAt'>) => {
     try {
+        // 1. Create Topic in Ansa Service for sync
+        let ansaTopicId = "";
+        try {
+            const topic = await createTopic({
+                title: task.title,
+                description: task.description,
+                assignedGroupIds: task.groupId ? [task.groupId] : [],
+                assignedGroupNames: task.groupName ? [task.groupName] : [],
+                status: 'pending'
+            });
+            ansaTopicId = topic.id!;
+        } catch (error) {
+            console.error("Failed to sync with AnsaService during task creation:", error);
+        }
+
         const docRef = await addDoc(collection(db, "tasks"), {
             ...task,
             subtasks: task.subtasks || [],
             blockers: task.blockers || [],
+            ansaTopicId,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         });
@@ -97,7 +114,7 @@ export const createTask = async (task: Omit<TaskData, 'id' | 'createdAt'>) => {
     }
 };
 
-export const updateTaskStatus = async (taskId: string, status: TaskData['status']) => {
+export const updateTaskStatus = async (taskId: string, status: TaskData['status'], ansaTopicId?: string) => {
     try {
         const taskRef = doc(db, "tasks", taskId);
         const updates: any = {
@@ -109,6 +126,19 @@ export const updateTaskStatus = async (taskId: string, status: TaskData['status'
             updates.submittedAt = serverTimestamp();
         }
         await updateDoc(taskRef, updates);
+
+        // Sync with AnsaService
+        if (ansaTopicId) {
+            const ansaStatus = status === 'completed' ? 'completed' :
+                status === 'pending' ? 'pending' : 'in_progress';
+
+            // Progress estimation based on status
+            const progress = status === 'completed' ? 100 :
+                status === 'review' ? 90 :
+                    status === 'in_progress' ? 50 : 0;
+
+            await updateTopic(ansaTopicId, { status: ansaStatus, progress });
+        }
     } catch (error) {
         console.error("Error updating task:", error);
         throw error;
@@ -118,7 +148,7 @@ export const updateTaskStatus = async (taskId: string, status: TaskData['status'
 /**
  * Called by a Group Lead / Core Employee to officially verify and complete a task.
  */
-export const verifyTask = async (taskId: string, verifiedByUid: string, verifiedByName: string) => {
+export const verifyTask = async (taskId: string, verifiedByUid: string, verifiedByName: string, ansaTopicId?: string) => {
     try {
         const taskRef = doc(db, "tasks", taskId);
         await updateDoc(taskRef, {
@@ -128,6 +158,11 @@ export const verifyTask = async (taskId: string, verifiedByUid: string, verified
             verifiedAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         });
+
+        // Sync with AnsaService
+        if (ansaTopicId) {
+            await updateTopic(ansaTopicId, { status: 'completed', progress: 100 });
+        }
     } catch (error) {
         console.error("Error verifying task:", error);
         throw error;
@@ -299,7 +334,22 @@ export const subscribeToUserTasks = (userId: string, groupIds: string[] = [], ca
 
 export const deleteTask = async (taskId: string) => {
     try {
-        await deleteDoc(doc(db, "tasks", taskId));
+        // Get task info first to see if it has an associated ansa topic
+        const taskRef = doc(db, "tasks", taskId);
+        const taskSnap = await getDoc(taskRef);
+
+        if (taskSnap.exists()) {
+            const taskData = taskSnap.data() as TaskData;
+            if (taskData.ansaTopicId) {
+                try {
+                    await deleteTopic(taskData.ansaTopicId);
+                } catch (e) {
+                    console.error("Failed to delete associated Ansa topic", e);
+                }
+            }
+        }
+
+        await deleteDoc(taskRef);
     } catch (error) {
         console.error("Error deleting task:", error);
         throw error;
@@ -313,8 +363,44 @@ export const updateTask = async (taskId: string, updates: Partial<TaskData>) => 
             ...updates,
             updatedAt: serverTimestamp()
         });
+
+        // Sync with AnsaService if title or description changed
+        if (updates.ansaTopicId && (updates.title || updates.description)) {
+            await updateTopic(updates.ansaTopicId, {
+                title: updates.title,
+                description: updates.description
+            });
+        }
     } catch (error) {
         console.error("Error updating task:", error);
         throw error;
+    }
+};
+
+/**
+ * Automatically submits tasks that have passed their deadline.
+ * Sets status to 'review' and records submittedAt.
+ */
+export const autoSubmitExpiredTasks = async (tasks: TaskData[]) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const expiredPendingTasks = tasks.filter(t => {
+        if (!t.id || !t.deadline) return false;
+        if (t.status === 'review' || t.status === 'completed') return false;
+        const deadlineDate = new Date(t.deadline);
+        return deadlineDate < today;
+    });
+
+    if (expiredPendingTasks.length === 0) return;
+
+    console.log(`Auto-submitting ${expiredPendingTasks.length} expired tasks...`);
+
+    for (const task of expiredPendingTasks) {
+        try {
+            await updateTaskStatus(task.id!, 'review', task.ansaTopicId);
+        } catch (error) {
+            console.error(`Failed to auto-submit task ${task.id}:`, error);
+        }
     }
 };

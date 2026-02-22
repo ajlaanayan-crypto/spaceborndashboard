@@ -14,7 +14,7 @@ import {
     writeBatch
 } from "firebase/firestore";
 
-export interface AnshTopic {
+export interface AnsaTopic {
     id?: string;
     title: string;
     description?: string;
@@ -28,7 +28,7 @@ export interface AnshTopic {
     updatedAt?: any;
 }
 
-export interface AnshSubtopic {
+export interface AnsaSubtopic {
     id?: string;
     topicId: string;
     title: string;
@@ -39,7 +39,7 @@ export interface AnshSubtopic {
 
 // --- Topic Operations ---
 
-export const createTopic = async (data: Omit<AnshTopic, 'id' | 'createdAt' | 'updatedAt' | 'progress' | 'totalSubtopics' | 'completedSubtopics'>) => {
+export const createTopic = async (data: Omit<AnsaTopic, 'id' | 'createdAt' | 'updatedAt' | 'progress' | 'totalSubtopics' | 'completedSubtopics'>) => {
     const topicData = {
         ...data,
         progress: 0,
@@ -49,18 +49,18 @@ export const createTopic = async (data: Omit<AnshTopic, 'id' | 'createdAt' | 'up
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     };
-    const docRef = await addDoc(collection(db, "ansh_topics"), topicData);
+    const docRef = await addDoc(collection(db, "ansa_topics"), topicData);
     return { id: docRef.id, ...topicData };
 };
 
-export const getTopics = async (): Promise<AnshTopic[]> => {
-    const q = query(collection(db, "ansh_topics"), orderBy("createdAt", "desc"));
+export const getTopics = async (): Promise<AnsaTopic[]> => {
+    const q = query(collection(db, "ansa_topics"), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnshTopic));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnsaTopic));
 };
 
-export const updateTopic = async (topicId: string, data: Partial<AnshTopic>) => {
-    const docRef = doc(db, "ansh_topics", topicId);
+export const updateTopic = async (topicId: string, data: Partial<AnsaTopic>) => {
+    const docRef = doc(db, "ansa_topics", topicId);
     await updateDoc(docRef, {
         ...data,
         updatedAt: serverTimestamp()
@@ -72,11 +72,11 @@ export const deleteTopic = async (topicId: string) => {
     const batch = writeBatch(db);
 
     // Delete Topic
-    const topicRef = doc(db, "ansh_topics", topicId);
+    const topicRef = doc(db, "ansa_topics", topicId);
     batch.delete(topicRef);
 
     // Get and Delete Subtopics
-    const subtopicsQuery = query(collection(db, "ansh_subtopics"), where("topicId", "==", topicId));
+    const subtopicsQuery = query(collection(db, "ansa_subtopics"), where("topicId", "==", topicId));
     const subtopicsSnapshot = await getDocs(subtopicsQuery);
     subtopicsSnapshot.forEach(doc => {
         batch.delete(doc.ref);
@@ -96,7 +96,7 @@ export const createSubtopic = async (topicId: string, title: string) => {
     };
 
     // Add subtopic
-    const docRef = await addDoc(collection(db, "ansh_subtopics"), subtopicData);
+    const docRef = await addDoc(collection(db, "ansa_subtopics"), subtopicData);
 
     // Update parent topic stats
     await recalculateTopicProgress(topicId);
@@ -104,26 +104,26 @@ export const createSubtopic = async (topicId: string, title: string) => {
     return { id: docRef.id, ...subtopicData };
 };
 
-export const getSubtopics = async (topicId: string): Promise<AnshSubtopic[]> => {
+export const getSubtopics = async (topicId: string): Promise<AnsaSubtopic[]> => {
     const q = query(
-        collection(db, "ansh_subtopics"),
+        collection(db, "ansa_subtopics"),
         where("topicId", "==", topicId),
         orderBy("createdAt", "asc")
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnshSubtopic));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AnsaSubtopic));
 };
 
 export const toggleSubtopicStatus = async (subtopicId: string, currentStatus: 'pending' | 'completed', topicId: string) => {
     const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
-    const docRef = doc(db, "ansh_subtopics", subtopicId);
+    const docRef = doc(db, "ansa_subtopics", subtopicId);
 
     await updateDoc(docRef, { status: newStatus });
     await recalculateTopicProgress(topicId);
 };
 
 export const deleteSubtopic = async (subtopicId: string, topicId: string) => {
-    await deleteDoc(doc(db, "ansh_subtopics", subtopicId));
+    await deleteDoc(doc(db, "ansa_subtopics", subtopicId));
     await recalculateTopicProgress(topicId);
 };
 
@@ -131,7 +131,7 @@ export const deleteSubtopic = async (subtopicId: string, topicId: string) => {
 
 const recalculateTopicProgress = async (topicId: string) => {
     // Get all subtopics for this topic
-    const q = query(collection(db, "ansh_subtopics"), where("topicId", "==", topicId));
+    const q = query(collection(db, "ansa_subtopics"), where("topicId", "==", topicId));
     const snapshot = await getDocs(q);
 
     const total = snapshot.size;
@@ -139,12 +139,12 @@ const recalculateTopicProgress = async (topicId: string) => {
 
     const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
 
-    let status: AnshTopic['status'] = 'in_progress';
+    let status: AnsaTopic['status'] = 'in_progress';
     if (total === 0) status = 'pending';
     else if (progress === 100) status = 'completed';
     else if (progress === 0) status = 'pending';
 
-    const topicRef = doc(db, "ansh_topics", topicId);
+    const topicRef = doc(db, "ansa_topics", topicId);
     await updateDoc(topicRef, {
         totalSubtopics: total,
         completedSubtopics: completed,
