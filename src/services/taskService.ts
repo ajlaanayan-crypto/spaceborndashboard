@@ -15,7 +15,7 @@ import {
 import { db } from "@/lib/firebase";
 import { createNotification, sendBulkNotifications } from "./notificationService";
 import { getGroupMembers } from "./groupService";
-import { createTopic, updateTopic } from "./ansaService";
+import { createTopic, updateTopic, deleteTopic } from "./ansaService";
 
 export interface Subtask {
     id: string;
