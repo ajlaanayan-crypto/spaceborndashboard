@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Loader2, Plus, X, Tag, AlertCircle, Users, User, Building2 } from "lucide-react";
-import { UserData, getUsersByRole } from "@/services/userService";
+import { UserData, getAllUsers } from "@/services/userService";
 import { TaskData, getAllTasks } from "@/services/taskService";
 import { getActiveGroups, GroupData } from "@/services/groupService";
 
@@ -16,7 +16,7 @@ interface TaskFormProps {
 
 export function TaskForm({ onSubmit, initialData, creatorId, onCancel }: TaskFormProps) {
     const [loading, setLoading] = useState(false);
-    const [interns, setInterns] = useState<UserData[]>([]);
+    const [allUsers, setAllUsers] = useState<UserData[]>([]);
     const [groups, setGroups] = useState<GroupData[]>([]);
     const [availableTasks, setAvailableTasks] = useState<TaskData[]>([]);
     const [subtaskInput, setSubtaskInput] = useState("");
@@ -41,12 +41,13 @@ export function TaskForm({ onSubmit, initialData, creatorId, onCancel }: TaskFor
 
     useEffect(() => {
         const fetchData = async () => {
-            const [internsData, groupsData, tasksData] = await Promise.all([
-                getUsersByRole("intern"),
+            const [usersData, groupsData, tasksData] = await Promise.all([
+                getAllUsers(),
                 getActiveGroups(),
                 getAllTasks()
             ]);
-            setInterns(internsData);
+            // Include all roles — admins, core, normal employees, interns
+            setAllUsers(usersData.filter(u => u.status !== 'deleted'));
             setGroups(groupsData);
             setAvailableTasks(tasksData.filter(t => t.id !== initialData?.id));
         };
@@ -97,9 +98,9 @@ export function TaskForm({ onSubmit, initialData, creatorId, onCancel }: TaskFor
 
             // Logic for Individual vs Group
             if (formData.type === 'individual') {
-                const selectedIntern = interns.find(i => i.uid === formData.assignedTo);
-                if (selectedIntern) {
-                    submissionData.assignedToName = selectedIntern.name;
+                const selectedUser = allUsers.find(u => u.uid === formData.assignedTo);
+                if (selectedUser) {
+                    submissionData.assignedToName = selectedUser.name;
                     // Keep groupId/groupName if set (Associated Group), otherwise they might be empty
                 }
 
@@ -205,9 +206,11 @@ export function TaskForm({ onSubmit, initialData, creatorId, onCancel }: TaskFor
                                             value={formData.assignedTo}
                                             onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
                                         >
-                                            <option value="">Select Intern</option>
-                                            {interns.map(intern => (
-                                                <option key={intern.uid} value={intern.uid}>{intern.name}</option>
+                                            <option value="">Select Person</option>
+                                            {allUsers.map(user => (
+                                                <option key={user.uid} value={user.uid}>
+                                                    {user.name} ({user.role?.replace('_', ' ') ?? 'user'})
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
