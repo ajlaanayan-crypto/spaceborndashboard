@@ -8,7 +8,7 @@ export interface UserData {
     email: string;
     role: UserRole;
     name: string;
-    status: "active" | "inactive";
+    status: "active" | "inactive" | "deleted";
     warnings?: number;
     lastLogin?: any; // Timestamp
     batch?: string; // Optional batch for interns
