@@ -5,7 +5,7 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { UserPlus, Shield, Loader2, Edit2, Key, ChevronDown, Eye, Trash2, AlertTriangle, PenLine, Filter } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { getAllUsers, UserData, updateUserStatus, updateUserName, updateUserBatch, addWarning } from "@/services/userService";
+import { getAllUsers, UserData, updateUserStatus, updateUserName, updateUserBatch, addWarning, removeWarning } from "@/services/userService";
 import { getAllGroups, GroupData } from "@/services/groupService";
 import { SessionManager } from "@/components/admin/SessionManager";
 import { auth } from "@/lib/firebase";
@@ -261,6 +261,18 @@ export default function UserManagementPage() {
         }
     };
 
+    const handleRemoveWarning = async (uid: string, name: string) => {
+        if (!confirm(`Remove one warning from ${name}?`)) return;
+        try {
+            await removeWarning(uid);
+            fetchUsers();
+            setSuccess(`Warning removed from ${name}`);
+            setTimeout(() => setSuccess(""), 3000);
+        } catch (error) {
+            alert("Failed to remove warning");
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -415,10 +427,24 @@ export default function UserManagementPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex gap-1 text-red-500">
-                                            {Array.from({ length: user.warnings || 0 }).map((_, i) => (
-                                                <span key={i}>❌</span>
-                                            ))}
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex gap-0.5 text-red-500">
+                                                {Array.from({ length: user.warnings || 0 }).map((_, i) => (
+                                                    <span key={i}>❌</span>
+                                                ))}
+                                                {(user.warnings || 0) === 0 && (
+                                                    <span className="text-gray-600 text-xs italic">None</span>
+                                                )}
+                                            </div>
+                                            {(user.warnings || 0) > 0 && (
+                                                <button
+                                                    onClick={() => handleRemoveWarning(user.uid, user.name)}
+                                                    className="text-xs px-1.5 py-0.5 bg-green-500/15 text-green-400 hover:bg-green-500/30 rounded border border-green-500/30 transition-colors"
+                                                    title="Remove one warning"
+                                                >
+                                                    −1
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">

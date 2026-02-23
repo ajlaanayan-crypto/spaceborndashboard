@@ -65,6 +65,25 @@ export const addWarning = async (uid: string) => {
     }
 };
 
+export const removeWarning = async (uid: string) => {
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+        const currentWarnings = userSnap.data().warnings || 0;
+        const newWarnings = Math.max(0, currentWarnings - 1);
+        const updates: any = { warnings: newWarnings };
+
+        // Re-activate if warnings drop below 3
+        if (newWarnings < 3 && userSnap.data().status === "inactive") {
+            updates.status = "active";
+        }
+
+        await updateDoc(userRef, updates);
+    }
+};
+
+
 export const getUsersByRole = async (role: UserRole) => {
     const q = query(collection(db, "users"), where("role", "==", role));
     const querySnapshot = await getDocs(q);
