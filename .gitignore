@@ -40,3 +40,18 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 logo_base64.txt
+
+# Auto-added standard ignores
+*.env
+*.log
+.env
+.env.*.local
+.env.local
+.next/
+.pnp.js
+.pnp/
+.turbo/
+Thumbs.db
+build/
+dist/
+node_modules/
